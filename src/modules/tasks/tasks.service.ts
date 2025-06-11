@@ -7,13 +7,15 @@ import { UpdateTaskDto } from './dto/update-task.dto';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { TaskStatus } from './enums/task-status.enum';
+import { TaskPriority } from './enums/task-priority.enum';
+import { BULL_QUEUES } from '@config/bull.config';
 
 @Injectable()
 export class TasksService {
   constructor(
     @InjectRepository(Task)
     private tasksRepository: Repository<Task>,
-    @InjectQueue('task-processing')
+    @InjectQueue(BULL_QUEUES.TASK_PROCESSING)
     private taskQueue: Queue,
   ) {}
 
@@ -98,5 +100,21 @@ export class TasksService {
     const task = await this.findOne(id);
     task.status = status as any;
     return this.tasksRepository.save(task);
+  }
+
+  async getStats() {
+    // Inefficient approach: N+1 query problem
+    const tasks = await this.tasksRepository.find();
+
+    // Inefficient computation: Should be done with SQL aggregation
+    const statistics = {
+      total: tasks.length,
+      completed: tasks.filter(t => t.status === TaskStatus.COMPLETED).length,
+      inProgress: tasks.filter(t => t.status === TaskStatus.IN_PROGRESS).length,
+      pending: tasks.filter(t => t.status === TaskStatus.PENDING).length,
+      highPriority: tasks.filter(t => t.priority === TaskPriority.HIGH).length,
+    };
+
+    return statistics;
   }
 }

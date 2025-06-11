@@ -4,16 +4,15 @@ import { BullModule } from '@nestjs/bullmq';
 import { TasksService } from './tasks.service';
 import { TasksController } from './tasks.controller';
 import { Task } from './entities/task.entity';
+import { BULL_QUEUES } from '@config/bull.config';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Task]),
-    BullModule.registerQueue({
-      name: 'task-processing',
-    }),
+    BullModule.registerQueue({ name: BULL_QUEUES.TASK_PROCESSING }),
   ],
   controllers: [TasksController],
   providers: [TasksService],
   exports: [TasksService],
 })
-export class TasksModule {} 
+export class TasksModule {}

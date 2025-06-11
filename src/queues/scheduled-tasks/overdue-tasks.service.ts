@@ -6,13 +6,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { LessThan, Repository } from 'typeorm';
 import { Task } from '../../modules/tasks/entities/task.entity';
 import { TaskStatus } from '../../modules/tasks/enums/task-status.enum';
+import { BULL_QUEUES } from '@config/bull.config';
 
 @Injectable()
 export class OverdueTasksService {
   private readonly logger = new Logger(OverdueTasksService.name);
 
   constructor(
-    @InjectQueue('task-processing')
+    @InjectQueue(BULL_QUEUES.TASK_PROCESSING)
     private taskQueue: Queue,
     @InjectRepository(Task)
     private tasksRepository: Repository<Task>,
@@ -23,12 +24,12 @@ export class OverdueTasksService {
   @Cron(CronExpression.EVERY_HOUR)
   async checkOverdueTasks() {
     this.logger.debug('Checking for overdue tasks...');
-    
+
     // TODO: Implement overdue tasks checking logic
     // 1. Find all tasks that are overdue (due date is in the past)
     // 2. Add them to the task processing queue
     // 3. Log the number of overdue tasks found
-    
+
     // Example implementation (incomplete - to be implemented by candidates)
     const now = new Date();
     const overdueTasks = await this.tasksRepository.find({
@@ -37,12 +38,18 @@ export class OverdueTasksService {
         status: TaskStatus.PENDING,
       },
     });
-    
+
     this.logger.log(`Found ${overdueTasks.length} overdue tasks`);
-    
+
     // Add tasks to the queue to be processed
     // TODO: Implement adding tasks to the queue
-    
+    this.taskQueue.addBulk(
+      overdueTasks.map(ot => ({
+        name: 'task-status-update',
+        data: { taskId: ot.id, status: TaskStatus.IN_PROGRESS },
+      })),
+    );
+
     this.logger.debug('Overdue tasks check completed');
   }
-} 
+}
