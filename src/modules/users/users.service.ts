@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { FindOneOptions, FindOptionsSelect, Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -19,11 +19,11 @@ export class UsersService {
       ...createUserDto,
       password: hashedPassword,
     });
-    return this.usersRepository.save(user);
+    return await this.usersRepository.save(user);
   }
 
-  findAll(): Promise<User[]> {
-    return this.usersRepository.find();
+  async findAll(): Promise<User[]> {
+    return await this.usersRepository.find();
   }
 
   async findOne(id: string): Promise<User> {
@@ -34,23 +34,31 @@ export class UsersService {
     return user;
   }
 
-  async findByEmail(email: string): Promise<User | null> {
-    return this.usersRepository.findOne({ where: { email } });
+  async findByEmail(email: string, attributes?: FindOptionsSelect<User>): Promise<User | null> {
+    const opt: FindOneOptions<User> = { where: { email } };
+    // if attributes is provided get only selected attributes
+    if (attributes) opt.select = attributes;
+    return await this.usersRepository.findOne(opt);
   }
 
   async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
     const user = await this.findOne(id);
-    
+
     if (updateUserDto.password) {
       updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
     }
-    
+
     this.usersRepository.merge(user, updateUserDto);
-    return this.usersRepository.save(user);
+    return await this.usersRepository.save(user);
   }
 
   async remove(id: string): Promise<void> {
     const user = await this.findOne(id);
     await this.usersRepository.remove(user);
   }
-} 
+
+  async checkExist(email: string) {
+    const count = await this.usersRepository.count({ where: { email } });
+    return count;
+  }
+}
