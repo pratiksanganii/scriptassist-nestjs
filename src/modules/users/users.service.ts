@@ -28,9 +28,7 @@ export class UsersService {
 
   async findOne(id: string): Promise<User> {
     const user = await this.usersRepository.findOne({ where: { id } });
-    if (!user) {
-      throw new NotFoundException(`User with ID ${id} not found`);
-    }
+    if (!user) throw new NotFoundException(`User with ID ${id} not found`);
     return user;
   }
 
@@ -44,9 +42,8 @@ export class UsersService {
   async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
     const user = await this.findOne(id);
 
-    if (updateUserDto.password) {
+    if (updateUserDto.password)
       updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
-    }
 
     this.usersRepository.merge(user, updateUserDto);
     return await this.usersRepository.save(user);
