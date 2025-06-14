@@ -21,3 +21,10 @@ export class RegisterDto extends CommonAuthDto {
   @IsNotEmpty()
   name: string;
 }
+
+export interface GenerateTokenPayload {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+}

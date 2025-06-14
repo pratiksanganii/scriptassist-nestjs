@@ -2,7 +2,7 @@ import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/co
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import * as bcrypt from 'bcrypt';
-import { LoginDto, RegisterDto } from './dto/auth.dto';
+import { GenerateTokenPayload, LoginDto, RegisterDto } from './dto/auth.dto';
 import { User } from '@modules/users/entities/user.entity';
 import { FindOneOptions, FindOptionsSelect } from 'typeorm';
 
@@ -22,33 +22,23 @@ export class AuthService {
     if (!passwordValid) throw new UnauthorizedException('Invalid password');
     // delete password after validating
     delete user.password;
-
-    return { access_token: this.generateToken(user.id), user };
+    return { access_token: this.generateToken(user), user };
   }
 
   async register(registerDto: RegisterDto) {
     // check if email already registered.
     await this.checkExist(registerDto.email, 'register');
     // create new user
-    const user = await this.usersService.create(registerDto);
+    const created = await this.usersService.create(registerDto);
+    // only return required details
+    const user = { id: created.id, email: created.email, name: created.name, role: created.role };
     // generate token
-    const token = this.generateToken(user.id);
-    return { user: { id: user.id, email: user.email, name: user.name, role: user.role }, token };
+    const token = this.generateToken(user);
+    return { user, token };
   }
 
-  private generateToken(userId: string) {
-    const payload = { sub: userId };
-    return this.jwtService.sign(payload);
-  }
-
-  async validateUser(userId: string): Promise<any> {
-    const user = await this.usersService.findOne(userId);
-    if (!user) return null;
-    return user;
-  }
-
-  async validateUserRoles(userId: string, requiredRoles: string[]): Promise<boolean> {
-    return true;
+  private generateToken(user: GenerateTokenPayload) {
+    return this.jwtService.sign(JSON.stringify(user));
   }
 
   //#region check user exist for login, signup
