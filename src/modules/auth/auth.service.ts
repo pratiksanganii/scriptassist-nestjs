@@ -38,7 +38,7 @@ export class AuthService {
   }
 
   private generateToken(user: GenerateTokenPayload) {
-    return this.jwtService.sign(JSON.stringify(user));
+    return this.jwtService.sign(user);
   }
 
   //#region check user exist for login, signup
@@ -55,7 +55,8 @@ export class AuthService {
     const findUser = await this.usersService.findByEmail(email, select);
     // if user does not exist
     if (!findUser) throw new UnauthorizedException('Invalid email');
-    else return findUser;
+    // return plain object
+    else return { ...findUser };
   }
   //#endregion
 }

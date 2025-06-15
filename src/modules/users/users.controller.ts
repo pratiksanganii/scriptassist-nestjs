@@ -15,6 +15,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { GetRole, UserRole } from '@common/decorators/get-role.decorator';
 
 @ApiTags('users')
 @Controller('users')
@@ -30,7 +31,7 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Get()
-  findAll() {
+  findAll(@GetRole() user: UserRole) {
     return this.usersService.findAll();
   }
 
