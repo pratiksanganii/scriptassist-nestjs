@@ -42,8 +42,8 @@ export class TasksController {
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'limit', required: false })
   async findAll(
-    @Query('status') status?: string,
-    @Query('priority') priority?: string,
+    @Query('status') status?: number,
+    @Query('priority') priority?: number,
     @Query('page') page?: number,
     @Query('limit') limit?: number,
   ) {
@@ -54,7 +54,6 @@ export class TasksController {
 
     // Inefficient processing: Manual filtering instead of using repository
     let tasks = await this.tasksService.findAll();
-
     // Inefficient filtering: In-memory filtering instead of database filtering
     if (status) {
       tasks = tasks.filter(task => task.status === (status as TaskStatus));

@@ -1,5 +1,6 @@
 import { IsEmail, IsNotEmpty, IsString, Length } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { UserRole } from '../../../common/user_role.enum';
 
 export class CommonAuthDto {
   @ApiProperty({ example: 'john.doe@example.com' })
@@ -27,5 +28,5 @@ export interface GenerateTokenPayload {
   id: string;
   email: string;
   name: string;
-  role: string;
+  role: UserRole;
 }

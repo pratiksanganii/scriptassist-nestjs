@@ -3,14 +3,26 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
 export class InitialSchema1615123456789 implements MigrationInterface {
   name = 'InitialSchema1615123456789';
 
+  private async createENum(runner: QueryRunner, name: string, values: string[] | number[]) {
+    await runner.query(`CREATE TYPE "${name}" AS ENUM(${values.join(',')})`);
+  }
+
   public async up(queryRunner: QueryRunner): Promise<void> {
+    // create all enum types
+    // user role
+    await this.createENum(queryRunner, 'user_role_enum', [1, 2]);
+    // task status
+    await this.createENum(queryRunner, 'task_status_enum', [0, 1, 2]);
+    // task priority
+    await this.createENum(queryRunner, 'task_priority_enum', [1, 2, 3]);
+
     await queryRunner.query(`
       CREATE TABLE "users" (
         "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
         "email" character varying NOT NULL,
         "name" character varying NOT NULL,
         "password" character varying NOT NULL,
-        "role" character varying NOT NULL DEFAULT 'user',
+        "role" "user_role_enum" NOT NULL DEFAULT 2,
         "created_at" TIMESTAMP NOT NULL DEFAULT now(),
         "updated_at" TIMESTAMP NOT NULL DEFAULT now(),
         CONSTRAINT "UQ_users_email" UNIQUE ("email"),
@@ -19,20 +31,12 @@ export class InitialSchema1615123456789 implements MigrationInterface {
     `);
 
     await queryRunner.query(`
-      CREATE TYPE "task_status_enum" AS ENUM('PENDING', 'IN_PROGRESS', 'COMPLETED')
-    `);
-
-    await queryRunner.query(`
-      CREATE TYPE "task_priority_enum" AS ENUM('LOW', 'MEDIUM', 'HIGH')
-    `);
-
-    await queryRunner.query(`
       CREATE TABLE "tasks" (
         "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
         "title" character varying NOT NULL,
         "description" text,
-        "status" "task_status_enum" NOT NULL DEFAULT 'PENDING',
-        "priority" "task_priority_enum" NOT NULL DEFAULT 'MEDIUM',
+        "status" "task_status_enum" NOT NULL DEFAULT 0,
+        "priority" "task_priority_enum" NOT NULL DEFAULT 2,
         "due_date" TIMESTAMP,
         "user_id" uuid NOT NULL,
         "created_at" TIMESTAMP NOT NULL DEFAULT now(),
@@ -53,4 +57,4 @@ export class InitialSchema1615123456789 implements MigrationInterface {
     await queryRunner.query(`DROP TYPE "task_status_enum"`);
     await queryRunner.query(`DROP TABLE "users"`);
   }
-} 
+}
