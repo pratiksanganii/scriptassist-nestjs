@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString, Length } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CommonAuthDto {
@@ -10,6 +10,7 @@ export class CommonAuthDto {
   @ApiProperty({ example: 'Password123!' })
   @IsString()
   @IsNotEmpty()
+  @Length(8)
   password: string;
 }
 
