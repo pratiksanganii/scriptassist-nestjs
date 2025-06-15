@@ -1,4 +1,4 @@
-import { UserRole } from '@common/user_role.enum';
+import { UserRole } from '../../../common/user_role.enum';
 import * as bcrypt from 'bcrypt';
 
 export const users = [
