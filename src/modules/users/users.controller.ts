@@ -9,9 +9,10 @@ import {
   UseGuards,
   ClassSerializerInterceptor,
   UseInterceptors,
+  Query,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { CreateUserDto } from './dto/create-user.dto';
+import { CreateUserDto, FindAllDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
@@ -31,8 +32,8 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Get()
-  findAll(@GetRole() user: UserRole) {
-    return this.usersService.findAll();
+  findAll(@GetRole() user: UserRole, @Query() query: FindAllDto) {
+    return this.usersService.findAll(query, user);
   }
 
   @UseGuards(JwtAuthGuard)

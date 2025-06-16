@@ -1,16 +1,19 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOneOptions, FindOptionsSelect, Repository } from 'typeorm';
+import { FindManyOptions, FindOneOptions, FindOptionsSelect, Repository } from 'typeorm';
 import { User } from './entities/user.entity';
-import { CreateUserDto } from './dto/create-user.dto';
+import { CreateUserDto, FindAllDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
+import { UserRole } from '@common/decorators/get-role.decorator';
+import { IFindAll, ORMService } from '@database/orm.service';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
-    private usersRepository: Repository<User>,
+    private readonly usersRepository: Repository<User>,
+    private readonly ormService: ORMService,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
@@ -22,8 +25,10 @@ export class UsersService {
     return await this.usersRepository.save(user);
   }
 
-  async findAll(): Promise<User[]> {
-    return await this.usersRepository.find();
+  async findAll(query: FindAllDto, user: UserRole): Promise<[User[], number]> {
+    const options: FindManyOptions<User> = {};
+    const page: IFindAll = { page: +query.page };
+    return await this.ormService.findAll(this.usersRepository, options, page);
   }
 
   async findOne(id: string): Promise<User> {

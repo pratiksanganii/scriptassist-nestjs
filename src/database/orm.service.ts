@@ -1,9 +1,10 @@
 import { DeepPartial, FindManyOptions, ObjectLiteral, Repository } from 'typeorm';
 
 const PAGE_SIZE = 10;
-interface IFindAll {
+export interface IFindAll {
   page: number;
-  download: boolean;
+  limit?: number;
+  download?: boolean;
 }
 export class ORMService {
   constructor() {}
@@ -27,6 +28,6 @@ export class ORMService {
   ) {
     if (!options?.take && !page.download) options.take = PAGE_SIZE;
     if (page.page) options.skip = (options.take ?? 0) * page.page;
-    return await repo.findAndCount(options)
+    return await repo.findAndCount(options);
   }
 }
