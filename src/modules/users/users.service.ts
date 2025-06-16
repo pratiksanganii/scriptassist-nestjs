@@ -5,8 +5,10 @@ import { User } from './entities/user.entity';
 import { CreateUserDto, FindAllDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
-import { UserRole } from '@common/decorators/get-role.decorator';
-import { IFindAll, ORMService } from '@database/orm.service';
+import { GetUserRole } from '@common/decorators/get-role.decorator';
+import { FindAllResponse, IFindAll, ORMService } from '@database/orm.service';
+import { UserRole } from 'src/shared/user_role.enum';
+import { UUID } from 'crypto';
 
 @Injectable()
 export class UsersService {
@@ -16,7 +18,13 @@ export class UsersService {
     private readonly ormService: ORMService,
   ) {}
 
-  async create(createUserDto: CreateUserDto): Promise<User> {
+  async createUser(createUserDto: CreateUserDto, role: UserRole): Promise<User> {
+    // if creating direct new user then role must be admin
+    if (role != UserRole.ADMIN) throw new Error('Only admin can create user');
+    return await this.storeNewUser(createUserDto);
+  }
+
+  async storeNewUser(createUserDto: CreateUserDto): Promise<User> {
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
     const user = this.usersRepository.create({
       ...createUserDto,
@@ -25,10 +33,9 @@ export class UsersService {
     return await this.usersRepository.save(user);
   }
 
-  async findAll(query: FindAllDto, user: UserRole): Promise<[User[], number]> {
-    const options: FindManyOptions<User> = {};
-    const page: IFindAll = { page: +query.page };
-    return await this.ormService.findAll(this.usersRepository, options, page);
+  async findAll(query: FindAllDto, user: GetUserRole): Promise<FindAllResponse<User>> {
+    const options: FindManyOptions<User> = this.roleWiseOption(user);
+    return await this.ormService.findAll(this.usersRepository, options, query);
   }
 
   async findOne(id: string): Promise<User> {
@@ -44,17 +51,19 @@ export class UsersService {
     return await this.usersRepository.findOne(opt);
   }
 
-  async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
-    const user = await this.findOne(id);
-
-    if (updateUserDto.password)
-      updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
-
-    this.usersRepository.merge(user, updateUserDto);
-    return await this.usersRepository.save(user);
+  async updateUser(id: UUID, updateUserDto: UpdateUserDto, role: UserRole): Promise<User> {
+    if (role != UserRole.ADMIN) throw new Error('Only admin can update user');
+    return await this.update(id, updateUserDto);
   }
 
-  async remove(id: string): Promise<void> {
+  async update(id: UUID, updateUserDto: UpdateUserDto): Promise<User> {
+    if (updateUserDto.password)
+      updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
+    return await this.ormService.update(this.usersRepository, id, updateUserDto as User);
+  }
+
+  async remove(id: string, role: UserRole): Promise<void> {
+    if (role != UserRole.ADMIN) throw new Error('Only admin can remove user');
     const user = await this.findOne(id);
     await this.usersRepository.remove(user);
   }
@@ -62,5 +71,11 @@ export class UsersService {
   async checkExist(email: string) {
     const count = await this.usersRepository.count({ where: { email } });
     return count;
+  }
+
+  private roleWiseOption(user: GetUserRole): FindManyOptions<User> {
+    // admin can access all users
+    if (user.role == UserRole.ADMIN) return {};
+    return {};
   }
 }

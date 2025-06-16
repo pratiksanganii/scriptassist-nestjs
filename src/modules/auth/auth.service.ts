@@ -29,7 +29,7 @@ export class AuthService {
     // check if email already registered.
     await this.checkExist(registerDto.email, 'register');
     // create new user
-    const created = await this.usersService.create(registerDto);
+    const created = await this.usersService.storeNewUser(registerDto);
     // only return required details
     const user = { id: created.id, email: created.email, name: created.name, role: created.role };
     // generate token

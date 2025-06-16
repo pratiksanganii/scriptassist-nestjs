@@ -16,7 +16,8 @@ import { CreateUserDto, FindAllDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { GetRole, UserRole } from '@common/decorators/get-role.decorator';
+import { GetRole, GetUserRole } from '@common/decorators/get-role.decorator';
+import { UUID } from 'crypto';
 
 @ApiTags('users')
 @Controller('users')
@@ -25,35 +26,39 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post()
-  create(@Body() createUserDto: CreateUserDto) {
-    return this.usersService.create(createUserDto);
+  async create(@GetRole() user: GetUserRole, @Body() createUserDto: CreateUserDto) {
+    return await this.usersService.createUser(createUserDto, user.role);
   }
 
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Get()
-  findAll(@GetRole() user: UserRole, @Query() query: FindAllDto) {
-    return this.usersService.findAll(query, user);
+  async findAll(@GetRole() user: GetUserRole, @Query() query: FindAllDto) {
+    return await this.usersService.findAll(query, user);
   }
 
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.usersService.findOne(id);
+  async findOne(@Param('id') id: string) {
+    return await this.usersService.findOne(id);
   }
 
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.usersService.update(id, updateUserDto);
+  async update(
+    @GetRole() user: GetUserRole,
+    @Param('id') id: UUID,
+    @Body() updateUserDto: UpdateUserDto,
+  ) {
+    return await this.usersService.updateUser(id, updateUserDto, user.role);
   }
 
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.usersService.remove(id);
+  async remove(@GetRole() user: GetUserRole, @Param('id') id: string) {
+    return await this.usersService.remove(id, user.role);
   }
 }

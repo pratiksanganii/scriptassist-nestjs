@@ -1,13 +1,15 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 import { UUID } from 'crypto';
+import { UserRole } from 'src/shared/user_role.enum';
 
-export interface UserRole {
+export interface GetUserRole {
   id: UUID;
   email: string;
   name: string;
-  role: string;
+  role: UserRole;
 }
 
-export const GetRole = createParamDecorator(
-  (_data: unknown, context: ExecutionContext) => context.switchToHttp().getRequest()?.user,
-);
+export const GetRole = createParamDecorator((_data: unknown, context: ExecutionContext) => {
+  const req = context.switchToHttp().getRequest();
+  return req?.user;
+});

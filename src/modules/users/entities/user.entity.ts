@@ -8,7 +8,7 @@ import {
 } from 'typeorm';
 import { Task } from '../../tasks/entities/task.entity';
 import { Exclude } from 'class-transformer';
-import { UserRole } from '../../../common/user_role.enum';
+import { UserRole } from '../../../shared/user_role.enum';
 
 @Entity('users')
 export class User {

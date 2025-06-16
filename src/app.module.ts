@@ -10,6 +10,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { TaskProcessorModule } from './queues/task-processor/task-processor.module';
 import { ScheduledTasksModule } from './queues/scheduled-tasks/scheduled-tasks.module';
 import { CacheService } from './common/services/cache.service';
+import { ORMService } from '@database/orm.service';
 
 @Module({
   imports: [
@@ -17,7 +18,7 @@ import { CacheService } from './common/services/cache.service';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    
+
     // Database
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
@@ -34,10 +35,10 @@ import { CacheService } from './common/services/cache.service';
         logging: configService.get('NODE_ENV') === 'development',
       }),
     }),
-    
+
     // Scheduling
     ScheduleModule.forRoot(),
-    
+
     // Queue
     BullModule.forRootAsync({
       imports: [ConfigModule],
@@ -49,24 +50,24 @@ import { CacheService } from './common/services/cache.service';
         },
       }),
     }),
-    
+
     // Rate limiting
     ThrottlerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ([
+      useFactory: (configService: ConfigService) => [
         {
           ttl: 60,
           limit: 10,
         },
-      ]),
+      ],
     }),
-    
+
     // Feature modules
     UsersModule,
     TasksModule,
     AuthModule,
-    
+
     // Queue processing modules
     TaskProcessorModule,
     ScheduledTasksModule,
@@ -74,12 +75,14 @@ import { CacheService } from './common/services/cache.service';
   providers: [
     // Inefficient: Global cache service with no configuration options
     // This creates a single in-memory cache instance shared across all modules
-    CacheService
+    CacheService,
+    ORMService,
   ],
   exports: [
     // Exporting the cache service makes it available to other modules
     // but creates tight coupling
-    CacheService
-  ]
+    CacheService,
+    ORMService,
+  ],
 })
-export class AppModule {} 
+export class AppModule {}
