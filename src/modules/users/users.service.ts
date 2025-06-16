@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindManyOptions, FindOneOptions, FindOptionsSelect, Repository } from 'typeorm';
 import { User } from './entities/user.entity';
@@ -7,7 +7,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
 import { GetUserRole } from '@common/decorators/get-role.decorator';
 import { FindAllResponse, IFindAll, ORMService } from '@database/orm.service';
-import { UserRole } from 'src/shared/user_role.enum';
+import { UserRole, UserStatus } from 'src/shared/user_role.enum';
 import { UUID } from 'crypto';
 
 @Injectable()
@@ -62,10 +62,10 @@ export class UsersService {
     return await this.ormService.update(this.usersRepository, id, updateUserDto as User);
   }
 
-  async remove(id: string, role: UserRole): Promise<void> {
-    if (role != UserRole.ADMIN) throw new Error('Only admin can remove user');
-    const user = await this.findOne(id);
-    await this.usersRepository.remove(user);
+  async remove(id: UUID, role: UserRole): Promise<void> {
+    if (role != UserRole.ADMIN)
+      throw new HttpException('Only admin can remove user', HttpStatus.UNAUTHORIZED);
+    await this.ormService.update(this.usersRepository, id, { status: UserStatus.DELETED });
   }
 
   async checkExist(email: string) {

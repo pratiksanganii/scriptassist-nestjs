@@ -58,7 +58,7 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Delete(':id')
-  async remove(@GetRole() user: GetUserRole, @Param('id') id: string) {
+  async remove(@GetRole() user: GetUserRole, @Param('id') id: UUID) {
     return await this.usersService.remove(id, user.role);
   }
 }

@@ -1,3 +1,6 @@
+import { TaskPriority } from '@modules/tasks/enums/task-priority.enum';
+import { TaskStatus } from '@modules/tasks/enums/task-status.enum';
+import { UserRole, UserStatus } from 'src/shared/user_role.enum';
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class InitialSchema1615123456789 implements MigrationInterface {
@@ -10,11 +13,21 @@ export class InitialSchema1615123456789 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     // create all enum types
     // user role
-    await this.createENum(queryRunner, 'user_role_enum', [1, 2]);
+    await this.createENum(queryRunner, 'user_status_enum', [UserStatus.ACTIVE, UserStatus.DELETED]);
+    // user status
+    await this.createENum(queryRunner, 'user_role_enum', [UserRole.ADMIN, UserRole.USER]);
     // task status
-    await this.createENum(queryRunner, 'task_status_enum', [0, 1, 2]);
+    await this.createENum(queryRunner, 'task_status_enum', [
+      TaskStatus.PENDING,
+      TaskStatus.IN_PROGRESS,
+      TaskStatus.COMPLETED,
+    ]);
     // task priority
-    await this.createENum(queryRunner, 'task_priority_enum', [1, 2, 3]);
+    await this.createENum(queryRunner, 'task_priority_enum', [
+      TaskPriority.HIGH,
+      TaskPriority.MEDIUM,
+      TaskPriority.LOW,
+    ]);
 
     await queryRunner.query(`
       CREATE TABLE "users" (
@@ -22,7 +35,8 @@ export class InitialSchema1615123456789 implements MigrationInterface {
         "email" character varying NOT NULL,
         "name" character varying NOT NULL,
         "password" character varying NOT NULL,
-        "role" "user_role_enum" NOT NULL DEFAULT 2,
+        "role" "user_role_enum" NOT NULL DEFAULT ${UserRole.USER},
+        "status" "user_status_enum" NOT NULL DEFAULT ${UserStatus.ACTIVE},
         "created_at" TIMESTAMP NOT NULL DEFAULT now(),
         "updated_at" TIMESTAMP NOT NULL DEFAULT now(),
         CONSTRAINT "UQ_users_email" UNIQUE ("email"),
@@ -35,8 +49,8 @@ export class InitialSchema1615123456789 implements MigrationInterface {
         "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
         "title" character varying NOT NULL,
         "description" text,
-        "status" "task_status_enum" NOT NULL DEFAULT 0,
-        "priority" "task_priority_enum" NOT NULL DEFAULT 2,
+        "status" "task_status_enum" NOT NULL DEFAULT ${TaskStatus.PENDING},
+        "priority" "task_priority_enum" NOT NULL DEFAULT ${TaskPriority.MEDIUM},
         "due_date" TIMESTAMP,
         "user_id" uuid NOT NULL,
         "created_at" TIMESTAMP NOT NULL DEFAULT now(),

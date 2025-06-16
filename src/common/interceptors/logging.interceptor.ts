@@ -1,6 +1,14 @@
-import { Injectable, NestInterceptor, ExecutionContext, CallHandler, Logger } from '@nestjs/common';
-import { Observable } from 'rxjs';
-import { tap } from 'rxjs/operators';
+import {
+  Injectable,
+  NestInterceptor,
+  ExecutionContext,
+  CallHandler,
+  Logger,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
+import { Observable, throwError } from 'rxjs';
+import { catchError, tap } from 'rxjs/operators';
 
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
@@ -24,13 +32,26 @@ export class LoggingInterceptor implements NestInterceptor {
     this.logger.log(`Request: ${method} ${url}`);
 
     return next.handle().pipe(
+      catchError(err => {
+        // You can rethrow the same error
+        if (err instanceof HttpException) return throwError(() => err);
+        // Return a generic error response
+        else
+          return throwError(
+            () =>
+              new HttpException(
+                {
+                  status: HttpStatus.INTERNAL_SERVER_ERROR,
+                  error: 'Internal server error',
+                },
+                HttpStatus.INTERNAL_SERVER_ERROR,
+              ),
+          );
+      }),
       tap({
         next: response => {
           this.logger.log(`Response: ${method} ${url} ${Date.now() - now}ms`);
           return response;
-        },
-        error: err => {
-          this.logger.error(`Error in ${method} ${url} ${Date.now() - now}ms: ${err.message}`);
         },
       }),
     );
