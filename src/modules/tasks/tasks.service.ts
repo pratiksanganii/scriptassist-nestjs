@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Brackets, Repository } from 'typeorm';
 import { Task } from './entities/task.entity';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
@@ -9,6 +9,10 @@ import { Queue } from 'bullmq';
 import { TaskStatus } from './enums/task-status.enum';
 import { TaskPriority } from './enums/task-priority.enum';
 import { BULL_QUEUES } from '@config/bull.config';
+import { FindAllResponse, ORMService } from '@database/orm.service';
+import { GetUserRole } from '@common/decorators/get-role.decorator';
+import { UserRole } from 'src/shared/user_role.enum';
+import { TaskFilterDto } from './dto/task-filter.dto';
 
 @Injectable()
 export class TasksService {
@@ -17,6 +21,7 @@ export class TasksService {
     private tasksRepository: Repository<Task>,
     @InjectQueue(BULL_QUEUES.TASK_PROCESSING)
     private taskQueue: Queue,
+    private readonly ormService: ORMService,
   ) {}
 
   async create(createTaskDto: CreateTaskDto): Promise<Task> {
@@ -34,12 +39,41 @@ export class TasksService {
     return savedTask;
   }
 
-  async findAll(): Promise<Task[]> {
-    // Inefficient implementation: retrieves all tasks without pagination
-    // and loads all relations, causing potential performance issues
-    return this.tasksRepository.find({
-      relations: ['user'],
-    });
+  async findAll(query: TaskFilterDto, user: GetUserRole): Promise<FindAllResponse<Task>> {
+    const qb = this.tasksRepository.createQueryBuilder(this.tasksRepository.metadata.tableName);
+
+    // if user is normal user then only show tasks of that user
+    if (user.role == UserRole.USER) qb.andWhere('user_id = :userId', { userId: user.id });
+
+    // filter by status
+    if (query?.status != undefined) qb.andWhere('status = :status', { status: query.status });
+
+    // filter by priority
+    if (query?.priority != undefined)
+      qb.andWhere('priority = :priority', { priority: query.priority });
+
+    // filter by due date
+    if (query?.startDate && query?.endDate)
+      qb.andWhere('dueDate BETWEEN :startDate AND :endDate', {
+        startDate: new Date(query.startDate).toJSON(),
+        endDate: new Date(query.endDate).toJSON(),
+      });
+
+    // search query
+    if (query?.search) {
+      qb.andWhere(
+        new Brackets(qbinner => {
+          qbinner.orWhere('title ILIKE :search', { search: `%${query.search}%` });
+          qbinner.orWhere('description ILIKE :search', { search: `%${query.search}%` });
+        }),
+      );
+    }
+    const take = +(query?.limit ?? 10);
+    const skip = +(+(query?.page ?? 1) - 1) * take;
+    qb.skip(skip);
+    qb.take(take);
+    const response = await qb.getManyAndCount();
+    return this.ormService.prepareFindAllResponse(response[0], response[1], { take, skip });
   }
 
   async findOne(id: string): Promise<Task> {

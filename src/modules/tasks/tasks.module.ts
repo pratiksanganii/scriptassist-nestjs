@@ -7,6 +7,7 @@ import { Task } from './entities/task.entity';
 import { BULL_QUEUES } from '@config/bull.config';
 import { RedisService } from '@database/redis/redis.service';
 import { CommonService } from '@common/services/common.service';
+import { ORMService } from '@database/orm.service';
 
 @Module({
   imports: [
@@ -14,7 +15,7 @@ import { CommonService } from '@common/services/common.service';
     BullModule.registerQueue({ name: BULL_QUEUES.TASK_PROCESSING }),
   ],
   controllers: [TasksController],
-  providers: [TasksService, RedisService, CommonService],
+  providers: [TasksService, RedisService, CommonService, ORMService],
   exports: [TasksService],
 })
 export class TasksModule {}

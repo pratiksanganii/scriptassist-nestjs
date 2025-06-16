@@ -35,21 +35,9 @@ export class ORMService {
     options: FindManyOptions<T>,
     page: IFindAll,
   ): Promise<FindAllResponse<T>> {
-    // check if not downloading
-    if (!page.download || page.download === 'false')
-      if (!page?.limit)
-        // set default page size if not provided
-        options.take = PAGE_SIZE;
-      else options.take = +page.limit;
-    if (page.page) options.skip = (options.take ?? 0) * +page.page;
+    this.prepareFindAllOpts(options, page);
     const [list, count] = await repo.findAndCount(options);
-    return {
-      total: count,
-      list,
-      rowsPerPage: options.take ?? 0,
-      page: +(page.page ?? 1),
-      totalPages: Math.ceil(count / (options.take ?? 0)),
-    };
+    return this.prepareFindAllResponse(list, count, options);
   }
 
   async findById<T extends ObjectLiteral>(repo: Repository<T>, id: UUID): Promise<T> {
@@ -58,4 +46,33 @@ export class ORMService {
     if (!entity) throw new Error('Entity not found');
     return entity;
   }
+
+  //#region
+  prepareFindAllResponse<T extends ObjectLiteral>(
+    list: T[],
+    count: number,
+    options: FindManyOptions<T>,
+  ) {
+    return {
+      total: count,
+      list,
+      rowsPerPage: options.take ?? PAGE_SIZE,
+      page: +(options.skip ?? 0) / (options.take ?? PAGE_SIZE) + 1,
+      totalPages: Math.ceil(count / (options.take ?? PAGE_SIZE)),
+    };
+  }
+  //#endregion
+
+  //#region prepare find all options
+  prepareFindAllOpts<T extends ObjectLiteral>(options: FindManyOptions<T>, page: IFindAll) {
+    // check if not downloading
+    if (!page.download || page.download === 'false')
+      if (!page?.limit)
+        // set default page size if not provided
+        options.take = PAGE_SIZE;
+      else options.take = +page.limit;
+    if (page.page) options.skip = (options.take ?? 0) * (+page.page - 1);
+    return options;
+  }
+  //#endregion
 }

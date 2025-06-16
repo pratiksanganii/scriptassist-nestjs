@@ -6,7 +6,7 @@ import { CreateUserDto, FindAllDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
 import { GetUserRole } from '@common/decorators/get-role.decorator';
-import { FindAllResponse, IFindAll, ORMService } from '@database/orm.service';
+import { FindAllResponse, ORMService } from '@database/orm.service';
 import { UserRole, UserStatus } from 'src/shared/user_role.enum';
 import { UUID } from 'crypto';
 
