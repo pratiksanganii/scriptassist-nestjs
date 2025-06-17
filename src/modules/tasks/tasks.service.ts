@@ -13,6 +13,7 @@ import { FindAllResponse, ORMService } from '@database/orm.service';
 import { GetUserRole } from '@common/decorators/get-role.decorator';
 import { UserRole } from 'src/shared/user_role.enum';
 import { TaskFilterDto } from './dto/task-filter.dto';
+import { BatchTaskDto } from './dto/batch-task.dto';
 
 @Injectable()
 export class TasksService {
@@ -136,19 +137,43 @@ export class TasksService {
     return this.tasksRepository.save(task);
   }
 
-  async getStats() {
-    // Inefficient approach: N+1 query problem
-    const tasks = await this.tasksRepository.find();
+  async getStats(user: GetUserRole) {
+    const alias = this.tasksRepository.metadata.tableName;
+    const taskQuery = this.tasksRepository.createQueryBuilder(alias);
+    taskQuery.groupBy(`${alias}.status`);
+    taskQuery.groupBy(`${alias}.priority`);
+    taskQuery.select(`count(id) as count, status, priority`); // aggregate count of tasks by status
+    // if normal user then get only tasks of that user
+    if (user.role == UserRole.USER) taskQuery.andWhere(`user_id = :userId`, { userId: user.id });
 
-    // Inefficient computation: Should be done with SQL aggregation
+    const tasks = await taskQuery.getRawMany();
     const statistics = {
-      total: tasks.length,
-      completed: tasks.filter(t => t.status === TaskStatus.COMPLETED).length,
-      inProgress: tasks.filter(t => t.status === TaskStatus.IN_PROGRESS).length,
-      pending: tasks.filter(t => t.status === TaskStatus.PENDING).length,
-      highPriority: tasks.filter(t => t.priority === TaskPriority.HIGH).length,
+      total: 0,
+      completed: 0,
+      inProgress: 0,
+      pending: 0,
+      highPriority: 0,
     };
+    tasks.forEach(task => {
+      statistics.total += task.count;
+      // update task status wise statistics
+      switch (task.status) {
+        case TaskStatus.COMPLETED:
+          statistics.completed += task.count;
+          break;
+        case TaskStatus.IN_PROGRESS:
+          statistics.inProgress += task.count;
+          break;
+        case TaskStatus.PENDING:
+          statistics.pending += task.count;
+          break;
+      }
+      // update high priority task count
+      if (task.priority == TaskPriority.HIGH) statistics.highPriority += task.count;
+    });
 
     return statistics;
   }
+
+  async batchProcess(operations: BatchTaskDto) {}
 }

@@ -15,7 +15,7 @@ import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { TaskStatus } from './enums/task-status.enum';
+import { BatchTaskDto } from './dto/batch-task.dto';
 import { RateLimitGuard } from '../../common/guards/rate-limit.guard';
 import { JwtAuthGuard } from '@modules/auth/guards/jwt-auth.guard';
 import { TaskFilterDto } from './dto/task-filter.dto';
@@ -42,20 +42,16 @@ export class TasksController {
 
   @Get('stats')
   @ApiOperation({ summary: 'Get task statistics' })
-  async getStats() {
-    return await this.tasksService.getStats();
+  async getStats(@GetRole() user: GetUserRole) {
+    return await this.tasksService.getStats(user);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Find a task by ID' })
-  async findOne(@Param('id') id: string) {
+  async findOne(@Param('id') id: string, @GetRole() user: GetUserRole) {
     const task = await this.tasksService.findOne(id);
-
-    if (!task) {
-      // Inefficient error handling: Revealing internal details
-      throw new HttpException(`Task with ID ${id} not found in the database`, HttpStatus.NOT_FOUND);
-    }
-
+    // if task not found
+    if (!task) throw new HttpException(`Task not found in the database`, HttpStatus.NOT_FOUND);
     return task;
   }
 
@@ -76,38 +72,7 @@ export class TasksController {
 
   @Post('batch')
   @ApiOperation({ summary: 'Batch process multiple tasks' })
-  async batchProcess(@Body() operations: { tasks: string[]; action: string }) {
-    // Inefficient batch processing: Sequential processing instead of bulk operations
-    const { tasks: taskIds, action } = operations;
-    const results = [];
-
-    // N+1 query problem: Processing tasks one by one
-    for (const taskId of taskIds) {
-      try {
-        let result;
-
-        switch (action) {
-          case 'complete':
-            result = await this.tasksService.update(taskId, { status: TaskStatus.COMPLETED });
-            break;
-          case 'delete':
-            result = await this.tasksService.remove(taskId);
-            break;
-          default:
-            throw new HttpException(`Unknown action: ${action}`, HttpStatus.BAD_REQUEST);
-        }
-
-        results.push({ taskId, success: true, result });
-      } catch (error) {
-        // Inconsistent error handling
-        results.push({
-          taskId,
-          success: false,
-          error: error instanceof Error ? error.message : 'Unknown error',
-        });
-      }
-    }
-
-    return results;
+  async batchProcess(@Body() operations: BatchTaskDto) {
+    return await this.tasksService.batchProcess(operations);
   }
 }

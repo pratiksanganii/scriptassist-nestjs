@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { TaskStatus } from '../enums/task-status.enum';
 import { TaskPriority } from '../enums/task-priority.enum';
-import { IsDateString, IsOptional } from 'class-validator';
+import { IsDateString, IsEnum, IsOptional } from 'class-validator';
 
 // TODO: Implement task filtering DTO
 // This DTO should be used to filter tasks by status, priority, etc.
@@ -11,10 +11,12 @@ export class TaskFilterDto {
   // Add appropriate decorators for validation and Swagger documentation
   @ApiProperty({ enum: TaskStatus, example: TaskStatus.PENDING, required: false })
   @IsOptional()
+  @IsEnum(TaskStatus)
   status: TaskStatus;
 
   @ApiProperty({ enum: TaskPriority, example: TaskPriority.MEDIUM, required: false })
   @IsOptional()
+  @IsEnum(TaskPriority)
   priority: TaskPriority;
 
   @ApiProperty({ example: '1', required: false })
