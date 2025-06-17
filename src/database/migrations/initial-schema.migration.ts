@@ -1,4 +1,4 @@
-import { TaskPriority } from '@modules/tasks/enums/task-priority.enum';
+import { TaskDelete, TaskPriority } from '@modules/tasks/enums/task-priority.enum';
 import { TaskStatus } from '@modules/tasks/enums/task-status.enum';
 import { UserRole, UserStatus } from 'src/shared/user_role.enum';
 import { MigrationInterface, QueryRunner } from 'typeorm';
@@ -29,6 +29,12 @@ export class InitialSchema1615123456789 implements MigrationInterface {
       TaskPriority.LOW,
     ]);
 
+    // task delete status
+    await this.createENum(queryRunner, 'task_delete_enum', [
+      TaskDelete.DELETED,
+      TaskDelete.NOT_DELETED,
+    ]);
+
     await queryRunner.query(`
       CREATE TABLE "users" (
         "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
@@ -51,6 +57,7 @@ export class InitialSchema1615123456789 implements MigrationInterface {
         "description" text,
         "status" "task_status_enum" NOT NULL DEFAULT ${TaskStatus.PENDING},
         "priority" "task_priority_enum" NOT NULL DEFAULT ${TaskPriority.MEDIUM},
+        "taskDelete" "task_delete_enum" NOT NULL DEFAULT ${TaskDelete.NOT_DELETED},
         "due_date" TIMESTAMP,
         "user_id" uuid NOT NULL,
         "created_at" TIMESTAMP NOT NULL DEFAULT now(),
