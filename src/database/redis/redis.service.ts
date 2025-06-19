@@ -1,18 +1,19 @@
-// src/redis/redis.service.ts
 import { HttpException, Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import {} from 'crypto';
 import Redis from 'ioredis';
 
 @Injectable()
 export class RedisService implements OnModuleInit, OnModuleDestroy {
+  constructor(private readonly configService: ConfigService) {}
   private client: Redis;
-  private readonly configService: ConfigService;
 
   onModuleInit() {
     // use same redis config as in BullMQ
     const config = this.configService?.get('bull')?.connection;
-    this.client = new Redis({ port: config?.port, host: config?.host });
+    this.client = new Redis({
+      port: config?.port ?? 6379,
+      host: config?.host ?? 'localhost',
+    });
   }
 
   onModuleDestroy() {

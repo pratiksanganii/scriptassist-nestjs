@@ -1,5 +1,5 @@
-import { CommonService } from '@common/services/common.service';
-import { RedisService } from '@database/redis/redis.service';
+import { CommonService } from '../services/common.service';
+import { RedisService } from '../../database/redis/redis.service';
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 
 @Injectable()

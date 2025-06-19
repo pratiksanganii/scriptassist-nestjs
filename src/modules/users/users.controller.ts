@@ -16,7 +16,7 @@ import { CreateUserDto, FindAllDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { GetRole, GetUserRole } from '@common/decorators/get-role.decorator';
+import { GetRole, GetUserRole } from '../../common/decorators/get-role.decorator';
 import { UUID } from 'crypto';
 
 @ApiTags('users')

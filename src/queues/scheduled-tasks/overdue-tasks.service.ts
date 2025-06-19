@@ -6,7 +6,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { LessThan, Repository } from 'typeorm';
 import { Task } from '../../modules/tasks/entities/task.entity';
 import { TaskStatus } from '../../modules/tasks/enums/task-status.enum';
-import { BULL_QUEUES } from '@config/bull.config';
+import { BULL_QUEUES } from '../../config/bull.config';
 
 @Injectable()
 export class OverdueTasksService {

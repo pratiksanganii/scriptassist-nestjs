@@ -17,9 +17,9 @@ import { UpdateTaskDto } from './dto/update-task.dto';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { BatchTaskDto } from './dto/batch-task.dto';
 import { RateLimitGuard } from '../../common/guards/rate-limit.guard';
-import { JwtAuthGuard } from '@modules/auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TaskFilterDto } from './dto/task-filter.dto';
-import { GetRole, GetUserRole } from '@common/decorators/get-role.decorator';
+import { GetRole, GetUserRole } from '../../common/decorators/get-role.decorator';
 
 @ApiTags('tasks')
 @Controller('tasks')

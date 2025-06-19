@@ -3,8 +3,6 @@ import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import * as bcrypt from 'bcrypt';
 import { GenerateTokenPayload, LoginDto, RegisterDto } from './dto/auth.dto';
-import { User } from '@modules/users/entities/user.entity';
-import { FindOneOptions, FindOptionsSelect } from 'typeorm';
 
 @Injectable()
 export class AuthService {

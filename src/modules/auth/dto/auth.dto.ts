@@ -1,6 +1,6 @@
 import { IsEmail, IsNotEmpty, IsString, Length } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { UserRole } from '../../../shared/user_role.enum';
+import { UserRole } from '../../users/user_role.enum';
 
 export class CommonAuthDto {
   @ApiProperty({ example: 'john.doe@example.com' })

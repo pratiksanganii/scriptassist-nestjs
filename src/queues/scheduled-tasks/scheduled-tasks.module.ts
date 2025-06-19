@@ -1,18 +1,15 @@
 import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
-import { BullModule } from '@nestjs/bullmq';
+import { BullQueueModule } from '../../modules/bullqueue/bullqueue.module';
 import { OverdueTasksService } from './overdue-tasks.service';
 import { TasksModule } from '../../modules/tasks/tasks.module';
-import { Task } from '@modules/tasks/entities/task.entity';
+import { Task } from '../../modules/tasks/entities/task.entity';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { BULL_QUEUES } from '@config/bull.config';
 
 @Module({
   imports: [
     ScheduleModule.forRoot(),
-    BullModule.registerQueue({
-      name: BULL_QUEUES.TASK_PROCESSING,
-    }),
+    BullQueueModule,
     TasksModule,
     TypeOrmModule.forFeature([Task]), // Dependency added
   ],

@@ -5,10 +5,10 @@ import { User } from './entities/user.entity';
 import { CreateUserDto, FindAllDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
-import { GetUserRole } from '@common/decorators/get-role.decorator';
-import { FindAllResponse, ORMService } from '@database/orm.service';
-import { UserRole, UserStatus } from 'src/shared/user_role.enum';
+import { GetUserRole } from '../../common/decorators/get-role.decorator';
+import { FindAllResponse, ORMService } from '../../database/orm.service';
 import { UUID } from 'crypto';
+import { UserRole, UserStatus } from '../../modules/users/user_role.enum';
 
 @Injectable()
 export class UsersService {

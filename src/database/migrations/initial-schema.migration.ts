@@ -1,6 +1,6 @@
-import { TaskDelete, TaskPriority } from '@modules/tasks/enums/task-priority.enum';
-import { TaskStatus } from '@modules/tasks/enums/task-status.enum';
-import { UserRole, UserStatus } from 'src/shared/user_role.enum';
+import { TaskDelete, TaskPriority } from '../../modules/tasks/enums/task-priority.enum';
+import { TaskStatus } from '../../modules/tasks/enums/task-status.enum';
+import { UserRole, UserStatus } from '../../modules/users/user_role.enum';
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class InitialSchema1615123456789 implements MigrationInterface {

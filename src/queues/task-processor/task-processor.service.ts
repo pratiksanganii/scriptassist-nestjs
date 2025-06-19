@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { TasksService } from '../../modules/tasks/tasks.service';
-import { BULL_QUEUES } from '@config/bull.config';
+import { BULL_QUEUES } from '../../config/bull.config';
 
 @Injectable()
 @Processor(BULL_QUEUES.TASK_PROCESSING)

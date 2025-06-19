@@ -1,6 +1,6 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 import { UUID } from 'crypto';
-import { UserRole } from 'src/shared/user_role.enum';
+import { UserRole } from '../../modules/users/user_role.enum';
 
 export interface GetUserRole {
   id: UUID;

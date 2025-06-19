@@ -8,12 +8,12 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { TaskStatus } from './enums/task-status.enum';
 import { TaskPriority } from './enums/task-priority.enum';
-import { BULL_QUEUES } from '@config/bull.config';
-import { FindAllResponse, ORMService } from '@database/orm.service';
-import { GetUserRole } from '@common/decorators/get-role.decorator';
-import { UserRole } from 'src/shared/user_role.enum';
+import { BULL_QUEUES } from '../../config/bull.config';
+import { UserRole } from '../../modules/users/user_role.enum';
+import { GetUserRole } from '../../common/decorators/get-role.decorator';
 import { TaskFilterDto } from './dto/task-filter.dto';
 import { BatchTaskDto } from './dto/batch-task.dto';
+import { FindAllResponse, ORMService } from '../../database/orm.service';
 
 @Injectable()
 export class TasksService {

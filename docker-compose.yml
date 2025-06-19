@@ -1,0 +1,48 @@
+networks:
+  taskflow_network:
+    driver: overlay
+services:
+  redis:
+    image: redis:7-alpine
+    networks:
+      - taskflow_network
+    ports:
+      - "6379:6379"
+    deploy:
+      placement:
+        constraints: [node.role == manager]  # optional: run on manager node
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  taskflow_api:
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile
+    image: taskflow
+    command: npm run start:prod
+    ports:
+      - '3000:3000'
+    env_file:
+      - .env.test.local
+    restart: unless-stopped
+    networks:
+      - taskflow_network
+    depends_on:
+      - redis
+    deploy:
+      replicas: 2
+  taskflow_worker:
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile
+    image: taskflow
+    command: npm run start:worker
+    networks:
+      - taskflow_network
+    env_file:
+      - .env.test.local
+    depends_on:
+      - redis
+    restart: unless-stopped

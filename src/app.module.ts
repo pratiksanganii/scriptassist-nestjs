@@ -1,15 +1,13 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { BullModule } from '@nestjs/bullmq';
 import { ScheduleModule } from '@nestjs/schedule';
 import { UsersModule } from './modules/users/users.module';
 import { TasksModule } from './modules/tasks/tasks.module';
 import { AuthModule } from './modules/auth/auth.module';
-import { TaskProcessorModule } from './queues/task-processor/task-processor.module';
 import { ScheduledTasksModule } from './queues/scheduled-tasks/scheduled-tasks.module';
 import { CacheService } from './common/services/cache.service';
-import { ORMService } from '@database/orm.service';
+import { ORMService } from './database/orm.service';
 
 @Module({
   imports: [
@@ -38,25 +36,10 @@ import { ORMService } from '@database/orm.service';
     // Scheduling
     ScheduleModule.forRoot(),
 
-    // Queue
-    BullModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        connection: {
-          host: configService.get('REDIS_HOST'),
-          port: configService.get('REDIS_PORT'),
-        },
-      }),
-    }),
-
     // Feature modules
     UsersModule,
     TasksModule,
     AuthModule,
-
-    // Queue processing modules
-    TaskProcessorModule,
     ScheduledTasksModule,
   ],
   providers: [
