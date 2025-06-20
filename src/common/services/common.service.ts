@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { createHash } from 'crypto';
+import { GetUserRole } from '../decorators/get-role.decorator';
+import { UserRole } from '../../modules/users/user_role.enum';
 
 @Injectable()
 export class CommonService {
@@ -9,5 +11,9 @@ export class CommonService {
     const hash = createHash('md5');
     hash.update(input);
     return hash.digest('hex');
+  }
+
+  checkAdmin(user: GetUserRole) {
+    if (user.role != UserRole.ADMIN) throw new Error('Only admin can access this resource');
   }
 }

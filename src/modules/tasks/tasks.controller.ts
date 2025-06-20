@@ -30,8 +30,8 @@ export class TasksController {
 
   @Post()
   @ApiOperation({ summary: 'Create a new task' })
-  create(@Body() createTaskDto: CreateTaskDto) {
-    return this.tasksService.create(createTaskDto);
+  create(@Body() createTaskDto: CreateTaskDto, @GetRole() user: GetUserRole) {
+    return this.tasksService.create(createTaskDto, user);
   }
 
   @Get()

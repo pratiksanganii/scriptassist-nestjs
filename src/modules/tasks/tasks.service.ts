@@ -13,7 +13,7 @@ import { UserRole } from '../../modules/users/user_role.enum';
 import { GetUserRole } from '../../common/decorators/get-role.decorator';
 import { TaskFilterDto } from './dto/task-filter.dto';
 import { BatchTaskDto } from './dto/batch-task.dto';
-import { FindAllResponse, ORMService } from '../../database/orm.service';
+import { FindAllResponse, ORMService, PAGE_SIZE } from '../../database/orm.service';
 
 @Injectable()
 export class TasksService {
@@ -25,19 +25,24 @@ export class TasksService {
     private readonly ormService: ORMService,
   ) {}
 
-  async create(createTaskDto: CreateTaskDto): Promise<Task> {
-    // Inefficient implementation: creates the task but doesn't use a single transaction
-    // for creating and adding to queue, potential for inconsistent state
-    const task = this.tasksRepository.create(createTaskDto);
-    const savedTask = await this.tasksRepository.save(task);
+  async create(createTaskDto: CreateTaskDto, user: GetUserRole): Promise<Task> {
+    // normal user can only create tasks for themselves
+    if (user.role == UserRole.USER && createTaskDto.userId && createTaskDto.userId != user.id)
+      throw new Error('Only admin can create tasks for other users');
+    // use userId of the api caller if not provided explicitly
+    if (!createTaskDto.userId) createTaskDto.userId = user.id;
 
-    // Add to queue without waiting for confirmation or handling errors
-    this.taskQueue.add('task-status-update', {
-      taskId: savedTask.id,
-      status: savedTask.status,
+    const response = await this.ormService.executeTransaction(async manager => {
+      const task = manager.create(Task, createTaskDto);
+      const saved = await manager.save(task);
+      this.taskQueue.add('task-status-update', {
+        taskId: saved.id,
+        status: saved.status,
+      });
+      return saved;
     });
 
-    return savedTask;
+    return response;
   }
 
   async findAll(query: TaskFilterDto, user: GetUserRole): Promise<FindAllResponse<Task>> {
@@ -55,7 +60,7 @@ export class TasksService {
 
     // filter by due date
     if (query?.startDate && query?.endDate)
-      qb.andWhere('dueDate BETWEEN :startDate AND :endDate', {
+      qb.andWhere('due_date BETWEEN :startDate AND :endDate', {
         startDate: new Date(query.startDate).toJSON(),
         endDate: new Date(query.endDate).toJSON(),
       });
@@ -69,7 +74,7 @@ export class TasksService {
         }),
       );
     }
-    const take = +(query?.limit ?? 10);
+    const take = +(query?.limit ?? PAGE_SIZE);
     const skip = +(+(query?.page ?? 1) - 1) * take;
     qb.skip(skip);
     qb.take(take);
@@ -140,8 +145,7 @@ export class TasksService {
   async getStats(user: GetUserRole) {
     const alias = this.tasksRepository.metadata.tableName;
     const taskQuery = this.tasksRepository.createQueryBuilder(alias);
-    taskQuery.groupBy(`${alias}.status`);
-    taskQuery.groupBy(`${alias}.priority`);
+    taskQuery.groupBy(`${alias}.status, ${alias}.priority`);
     taskQuery.select(`count(id) as count, status, priority`); // aggregate count of tasks by status
     // if normal user then get only tasks of that user
     if (user.role == UserRole.USER) taskQuery.andWhere(`user_id = :userId`, { userId: user.id });
@@ -155,9 +159,11 @@ export class TasksService {
       highPriority: 0,
     };
     tasks.forEach(task => {
+      // make strings into numbers
+      task.count = +task.count;
       statistics.total += task.count;
       // update task status wise statistics
-      switch (task.status) {
+      switch (+task.status) {
         case TaskStatus.COMPLETED:
           statistics.completed += task.count;
           break;

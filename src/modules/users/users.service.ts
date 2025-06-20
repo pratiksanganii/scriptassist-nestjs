@@ -9,6 +9,7 @@ import { GetUserRole } from '../../common/decorators/get-role.decorator';
 import { FindAllResponse, ORMService } from '../../database/orm.service';
 import { UUID } from 'crypto';
 import { UserRole, UserStatus } from '../../modules/users/user_role.enum';
+import { CommonService } from 'src/common/services/common.service';
 
 @Injectable()
 export class UsersService {
@@ -16,11 +17,11 @@ export class UsersService {
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
     private readonly ormService: ORMService,
+    private readonly commonService: CommonService,
   ) {}
 
-  async createUser(createUserDto: CreateUserDto, role: UserRole): Promise<User> {
-    // if creating direct new user then role must be admin
-    if (role != UserRole.ADMIN) throw new Error('Only admin can create user');
+  async createUser(createUserDto: CreateUserDto, user: GetUserRole): Promise<User> {
+    this.commonService.checkAdmin(user);
     return await this.storeNewUser(createUserDto);
   }
 
@@ -34,8 +35,9 @@ export class UsersService {
   }
 
   async findAll(query: FindAllDto, user: GetUserRole): Promise<FindAllResponse<User>> {
-    const options: FindManyOptions<User> = this.roleWiseOption(user);
-    return await this.ormService.findAll(this.usersRepository, options, query);
+    this.commonService.checkAdmin(user);
+    // #pending pagination and search
+    return await this.ormService.findAll(this.usersRepository, {}, query);
   }
 
   async findOne(id: string): Promise<User> {
@@ -71,11 +73,5 @@ export class UsersService {
   async checkExist(email: string) {
     const count = await this.usersRepository.count({ where: { email } });
     return count;
-  }
-
-  private roleWiseOption(user: GetUserRole): FindManyOptions<User> {
-    // admin can access all users
-    if (user.role == UserRole.ADMIN) return {};
-    return {};
   }
 }
