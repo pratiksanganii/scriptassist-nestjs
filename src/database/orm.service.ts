@@ -1,7 +1,15 @@
 import { UUID } from 'crypto';
-import { DeepPartial, FindManyOptions, FindOptionsWhere, ObjectLiteral, Repository } from 'typeorm';
+import {
+  DeepPartial,
+  EntityManager,
+  FindManyOptions,
+  FindOptionsWhere,
+  ObjectLiteral,
+  Repository,
+} from 'typeorm';
+import dataSource from './data-source';
 
-const PAGE_SIZE = 10;
+export const PAGE_SIZE = 10;
 export interface IFindAll {
   page: string | number;
   limit?: string | number;
@@ -73,6 +81,25 @@ export class ORMService {
       else options.take = +page.limit;
     if (page.page) options.skip = (options.take ?? 0) * (+page.page - 1);
     return options;
+  }
+  //#endregion
+
+  //#region execute in transaction
+  async executeTransaction<T>(handler: (manager: EntityManager) => Promise<T>) {
+    // create connection
+    const conn = dataSource.createQueryRunner();
+    await conn.connect();
+    await conn.startTransaction();
+    try {
+      const result = await handler(conn.manager);
+      await conn.commitTransaction();
+      return result;
+    } catch (error) {
+      await conn.rollbackTransaction();
+      throw error;
+    } finally {
+      await conn.release();
+    }
   }
   //#endregion
 }
