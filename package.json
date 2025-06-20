@@ -10,6 +10,7 @@
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
+    "start:worker:dev": "nest start --watch --entryFile src/worker.main",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node -r tsconfig-paths/register dist/src/main",
     "start:worker": "node -r tsconfig-paths/register dist/src/worker.main.js",
