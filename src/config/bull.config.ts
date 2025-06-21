@@ -1,6 +1,9 @@
 import { registerAs } from '@nestjs/config';
 
-export const BULL_QUEUES = { TASK_PROCESSING: 'task-processing' };
+export const BULL_QUEUES = {
+  TASK_PROCESSING: 'task-processing',
+  NOTIFICATION_PROCESSING: 'notification-processing',
+};
 
 export default registerAs('bull', () => ({
   connection: {

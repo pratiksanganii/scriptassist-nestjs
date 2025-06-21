@@ -9,7 +9,7 @@ import { GetUserRole } from '../../common/decorators/get-role.decorator';
 import { FindAllResponse, ORMService } from '../../database/orm.service';
 import { UUID } from 'crypto';
 import { UserRole, UserStatus } from '../../modules/users/user_role.enum';
-import { CommonService } from 'src/common/services/common.service';
+import { CommonService } from '../../common/services/common.service';
 
 @Injectable()
 export class UsersService {

@@ -33,8 +33,7 @@ export class TasksService {
     if (!createTaskDto.userId) createTaskDto.userId = user.id;
 
     const response = await this.ormService.executeTransaction(async manager => {
-      const task = manager.create(Task, createTaskDto);
-      const saved = await manager.save(task);
+      const saved = await this.ormService.createWithManger<Task>(Task, createTaskDto, manager);
       this.taskQueue.add('task-status-update', {
         taskId: saved.id,
         status: saved.status,

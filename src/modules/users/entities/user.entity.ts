@@ -9,6 +9,7 @@ import {
 import { Task } from '../../tasks/entities/task.entity';
 import { Exclude } from 'class-transformer';
 import { UserRole, UserStatus } from '../user_role.enum';
+import { Notification } from '../../../queues/notification/entities/notification-log.entity';
 
 @Entity('users')
 export class User {
@@ -41,6 +42,9 @@ export class User {
 
   @OneToMany(() => Task, task => task.user)
   tasks: Task[];
+
+  // @OneToMany(() => Notification, notification => notification.user)
+  // notifications: Notification[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

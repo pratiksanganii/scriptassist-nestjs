@@ -3,13 +3,18 @@ import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { TasksService } from '../../modules/tasks/tasks.service';
 import { BULL_QUEUES } from '../../config/bull.config';
+import { TaskStatus } from '../../modules/tasks/enums/task-status.enum';
+import { CommonService } from '../../common/services/common.service';
 
 @Injectable()
 @Processor(BULL_QUEUES.TASK_PROCESSING)
 export class TaskProcessorService extends WorkerHost {
-  private readonly logger = new Logger(TaskProcessorService.name);
+  protected readonly logger = new Logger(TaskProcessorService.name);
 
-  constructor(private readonly tasksService: TasksService) {
+  constructor(
+    private readonly tasksService: TasksService,
+    private readonly commonService: CommonService,
+  ) {
     super();
   }
 
@@ -43,15 +48,12 @@ export class TaskProcessorService extends WorkerHost {
   private async handleStatusUpdate(job: Job) {
     const { taskId, status } = job.data;
 
-    if (!taskId || !status) {
+    if (!taskId || !this.commonService.getEnumValues(TaskStatus).includes(status)) {
       return { success: false, error: 'Missing required data' };
     }
-
-    // Inefficient: No validation of status values
     // No transaction handling
     // No retry mechanism
     const task = await this.tasksService.updateStatus(taskId, status);
-
     return {
       success: true,
       taskId: task.id,

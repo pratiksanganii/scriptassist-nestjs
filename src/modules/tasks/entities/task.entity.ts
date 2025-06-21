@@ -40,6 +40,7 @@ export class Task {
     type: 'enum',
     enum: TaskDelete,
     default: TaskDelete.NOT_DELETED,
+    name: 'task_delete',
   })
   taskDelete: TaskDelete;
 

@@ -2,6 +2,7 @@ import { UUID } from 'crypto';
 import {
   DeepPartial,
   EntityManager,
+  EntityTarget,
   FindManyOptions,
   FindOptionsWhere,
   ObjectLiteral,
@@ -87,10 +88,11 @@ export class ORMService {
   //#region execute in transaction
   async executeTransaction<T>(handler: (manager: EntityManager) => Promise<T>) {
     // create connection
+    if (!dataSource.isInitialized) await dataSource.initialize();
     const conn = dataSource.createQueryRunner();
-    await conn.connect();
-    await conn.startTransaction();
     try {
+      await conn.connect();
+      await conn.startTransaction();
       const result = await handler(conn.manager);
       await conn.commitTransaction();
       return result;
@@ -100,6 +102,24 @@ export class ORMService {
     } finally {
       await conn.release();
     }
+  }
+  //#endregion
+
+  //#region create new row
+  async create<T extends ObjectLiteral>(repo: Repository<T>, obj: DeepPartial<T>): Promise<T> {
+    const entity = repo.create(obj);
+    return await repo.save(entity);
+  }
+  //#endregion
+
+  //#region create new row with manager
+  async createWithManger<T extends ObjectLiteral>(
+    repo: EntityTarget<T>,
+    obj: DeepPartial<T>,
+    manager: EntityManager,
+  ): Promise<T> {
+    const entity = manager.create(repo, obj);
+    return await manager.save(entity);
   }
   //#endregion
 }

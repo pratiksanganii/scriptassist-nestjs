@@ -7,6 +7,9 @@ import { Task } from '../../modules/tasks/entities/task.entity';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ORMService } from '../../database/orm.service';
 import { BullQueueModule } from '../../modules/bullqueue/bullqueue.module';
+import { CommonService } from '../../common/services/common.service';
+import { User } from '../../modules/users/entities/user.entity';
+import { Notification } from '../notification/entities/notification-log.entity';
 
 @Module({
   imports: [
@@ -24,7 +27,7 @@ import { BullQueueModule } from '../../modules/bullqueue/bullqueue.module';
         username: configService.get('DB_USERNAME'),
         password: configService.get('DB_PASSWORD'),
         database: configService.get('DB_DATABASE'),
-        entities: [__dirname + '/**/*.entity{.ts,.js}'],
+        entities: [Task, User, Notification],
         synchronize: configService.get('NODE_ENV') === 'development',
         logging: configService.get('NODE_ENV') === 'development',
       }),
@@ -32,7 +35,7 @@ import { BullQueueModule } from '../../modules/bullqueue/bullqueue.module';
     TypeOrmModule.forFeature([Task]),
     TasksModule,
   ],
-  providers: [TaskProcessorService, TasksService, ORMService],
+  providers: [TaskProcessorService, TasksService, ORMService, CommonService],
   exports: [TaskProcessorService],
 })
 export class TaskProcessorModule {}

@@ -16,4 +16,8 @@ export class CommonService {
   checkAdmin(user: GetUserRole) {
     if (user.role != UserRole.ADMIN) throw new Error('Only admin can access this resource');
   }
+
+  getEnumValues<T extends object>(e: T): T[keyof T][] {
+    return Object.values(e).filter(v => typeof v !== 'string') as T[keyof T][];
+  }
 }

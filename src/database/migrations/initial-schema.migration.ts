@@ -57,7 +57,7 @@ export class InitialSchema1615123456789 implements MigrationInterface {
         "description" text,
         "status" "task_status_enum" NOT NULL DEFAULT ${TaskStatus.PENDING},
         "priority" "task_priority_enum" NOT NULL DEFAULT ${TaskPriority.MEDIUM},
-        "taskDelete" "task_delete_enum" NOT NULL DEFAULT ${TaskDelete.NOT_DELETED},
+        "task_delete" "task_delete_enum" NOT NULL DEFAULT ${TaskDelete.NOT_DELETED},
         "due_date" TIMESTAMP,
         "user_id" uuid NOT NULL,
         "created_at" TIMESTAMP NOT NULL DEFAULT now(),
