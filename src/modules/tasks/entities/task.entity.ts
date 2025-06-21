@@ -4,12 +4,14 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { TaskStatus } from '../enums/task-status.enum';
 import { TaskDelete, TaskPriority } from '../enums/task-priority.enum';
+import { Notification } from '../../../queues/notification/entities/notification-log.entity';
 
 @Entity('tasks')
 export class Task {
@@ -59,4 +61,7 @@ export class Task {
 
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
+
+  @OneToMany(() => Notification, notification => notification.user)
+  notifications: Notification[];
 }

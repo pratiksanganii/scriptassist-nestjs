@@ -43,8 +43,8 @@ export class User {
   @OneToMany(() => Task, task => task.user)
   tasks: Task[];
 
-  // @OneToMany(() => Notification, notification => notification.user)
-  // notifications: Notification[];
+  @OneToMany(() => Notification, notification => notification.user)
+  notifications: Notification[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

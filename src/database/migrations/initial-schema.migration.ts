@@ -6,31 +6,32 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
 export class InitialSchema1615123456789 implements MigrationInterface {
   name = 'InitialSchema1615123456789';
 
-  private async createENum(runner: QueryRunner, name: string, values: string[] | number[]) {
-    await runner.query(`CREATE TYPE "${name}" AS ENUM(${values.join(',')})`);
+  private async createDomain(runner: QueryRunner, name: string, values: string[] | number[]) {
+    const query = `CREATE DOMAIN ${name}_domain AS SMALLINT CHECK(VALUE IN  (${values.join(',')}))`;
+    await runner.query(query);
   }
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     // create all enum types
     // user role
-    await this.createENum(queryRunner, 'user_status_enum', [UserStatus.ACTIVE, UserStatus.DELETED]);
+    await this.createDomain(queryRunner, 'user_status', [UserStatus.ACTIVE, UserStatus.DELETED]);
     // user status
-    await this.createENum(queryRunner, 'user_role_enum', [UserRole.ADMIN, UserRole.USER]);
+    await this.createDomain(queryRunner, 'user_role', [UserRole.ADMIN, UserRole.USER]);
     // task status
-    await this.createENum(queryRunner, 'task_status_enum', [
+    await this.createDomain(queryRunner, 'task_status', [
       TaskStatus.PENDING,
       TaskStatus.IN_PROGRESS,
       TaskStatus.COMPLETED,
     ]);
     // task priority
-    await this.createENum(queryRunner, 'task_priority_enum', [
+    await this.createDomain(queryRunner, 'task_priority', [
       TaskPriority.HIGH,
       TaskPriority.MEDIUM,
       TaskPriority.LOW,
     ]);
 
     // task delete status
-    await this.createENum(queryRunner, 'task_delete_enum', [
+    await this.createDomain(queryRunner, 'task_delete', [
       TaskDelete.DELETED,
       TaskDelete.NOT_DELETED,
     ]);
@@ -41,8 +42,8 @@ export class InitialSchema1615123456789 implements MigrationInterface {
         "email" character varying NOT NULL,
         "name" character varying NOT NULL,
         "password" character varying NOT NULL,
-        "role" "user_role_enum" NOT NULL DEFAULT ${UserRole.USER},
-        "status" "user_status_enum" NOT NULL DEFAULT ${UserStatus.ACTIVE},
+        "role" user_role_domain NOT NULL DEFAULT ${UserRole.USER},
+        "status" user_status_domain NOT NULL DEFAULT ${UserStatus.ACTIVE},
         "created_at" TIMESTAMP NOT NULL DEFAULT now(),
         "updated_at" TIMESTAMP NOT NULL DEFAULT now(),
         CONSTRAINT "UQ_users_email" UNIQUE ("email"),
@@ -55,9 +56,9 @@ export class InitialSchema1615123456789 implements MigrationInterface {
         "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
         "title" character varying NOT NULL,
         "description" text,
-        "status" "task_status_enum" NOT NULL DEFAULT ${TaskStatus.PENDING},
-        "priority" "task_priority_enum" NOT NULL DEFAULT ${TaskPriority.MEDIUM},
-        "task_delete" "task_delete_enum" NOT NULL DEFAULT ${TaskDelete.NOT_DELETED},
+        "status" task_status_domain NOT NULL DEFAULT ${TaskStatus.PENDING},
+        "priority" task_priority_domain NOT NULL DEFAULT ${TaskPriority.MEDIUM},
+        "task_delete" task_delete_domain NOT NULL DEFAULT ${TaskDelete.NOT_DELETED},
         "due_date" TIMESTAMP,
         "user_id" uuid NOT NULL,
         "created_at" TIMESTAMP NOT NULL DEFAULT now(),
@@ -68,6 +69,19 @@ export class InitialSchema1615123456789 implements MigrationInterface {
 
     await queryRunner.query(`
       ALTER TABLE "tasks" ADD CONSTRAINT "FK_tasks_users" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE
+    `);
+
+    await queryRunner.query(`
+      CREATE TABLE notifications (
+        id SERIAL PRIMARY KEY,
+        user_id UUID NOT NULL,
+        task_id UUID NOT NULL,
+        type VARCHAR NOT NULL,
+        message VARCHAR NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT fk_notifications_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        CONSTRAINT fk_notifications_task FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
+        );
     `);
   }
 

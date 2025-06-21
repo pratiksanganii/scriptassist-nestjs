@@ -1,6 +1,6 @@
 import { DataSource, DataSourceOptions } from 'typeorm';
 import * as dotenv from 'dotenv';
-import { CreateInitialSchema1710752400000 } from './migrations/1710752400000-CreateInitialSchema';
+import { InitialSchema1615123456789 } from './migrations/initial-schema.migration';
 
 // Load environment variables
 dotenv.config();
@@ -13,7 +13,7 @@ const dataSourceOptions: DataSourceOptions = {
   password: process.env.DB_PASSWORD || 'postgres',
   database: process.env.DB_DATABASE || 'taskflow',
   entities: [__dirname + '/../**/*.entity{.ts,.js}'],
-  migrations: [CreateInitialSchema1710752400000],
+  migrations: [InitialSchema1615123456789],
   migrationsTableName: 'migrations',
   synchronize: false, // Important: Set to false for production
   logging: process.env.NODE_ENV === 'development',
