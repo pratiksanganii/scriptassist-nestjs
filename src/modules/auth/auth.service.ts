@@ -1,14 +1,27 @@
-import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  ConflictException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import * as bcrypt from 'bcrypt';
-import { GenerateTokenPayload, LoginDto, RegisterDto } from './dto/auth.dto';
+import { GenerateTokenPayload, LoginDto, RefreshTokenDto, RegisterDto } from './dto/auth.dto';
+import { ORMService } from 'src/database/orm.service';
+import { EntityManager } from 'typeorm';
+import { User } from '../users/entities/user.entity';
+import { GetUserRole } from 'src/common/decorators/get-role.decorator';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
+    private readonly ormService: ORMService,
+    private readonly configService: ConfigService,
   ) {}
 
   async login(loginDto: LoginDto) {
@@ -20,23 +33,39 @@ export class AuthService {
     if (!passwordValid) throw new UnauthorizedException('Invalid password');
     // delete password after validating
     delete user.password;
-    return { access_token: this.generateToken(user), user };
+    // generate and store access and refresh token
+    const { accessToken, refreshToken } = await this.ormService.executeTransaction(
+      async manager => await this.generateTokens(user, manager),
+    );
+    return { accessToken, refreshToken, user };
   }
 
   async register(registerDto: RegisterDto) {
     // check if email already registered.
     await this.checkExist(registerDto.email, 'register');
-    // create new user
-    const created = await this.usersService.storeNewUser(registerDto);
-    // only return required details
-    const user = { id: created.id, email: created.email, name: created.name, role: created.role };
-    // generate token
-    const token = this.generateToken(user);
-    return { user, token };
+    const response = await this.ormService.executeTransaction(async manager => {
+      // create new user
+      const created = await this.usersService.storeNewUser(registerDto, manager);
+      // only return required details
+      const user = { id: created.id, email: created.email, name: created.name, role: created.role };
+      // generate token
+      const { accessToken, refreshToken } = await this.generateTokens(user, manager);
+      return { user, accessToken, refreshToken };
+    });
+    return response;
   }
 
-  private generateToken(user: GenerateTokenPayload) {
-    return this.jwtService.sign(user);
+  private async generateTokens(user: GenerateTokenPayload, manager: EntityManager) {
+    const accessToken = this.jwtService.sign(user);
+    const payload = {
+      secret: this.configService.get('jwt.refreshSecret'),
+      expiresIn: this.configService.get('jwt.refreshExpiresIn'),
+    };
+    const refreshToken = this.jwtService.sign(user, payload);
+    // store hashed refresh token and access token for single session per user
+    const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
+    await manager.update(User, { id: user.id }, { hashedRefreshToken });
+    return { accessToken, refreshToken };
   }
 
   //#region check user exist for login, signup
@@ -57,4 +86,25 @@ export class AuthService {
     else return { ...findUser };
   }
   //#endregion
+
+  async refreshToken(refreshTokenDto: RefreshTokenDto, user: GetUserRole) {
+    const find = await this.usersService.findOne(user.id);
+    if (!find || !find.hashedRefreshToken)
+      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+    const refreshTokenValid = await bcrypt.compare(
+      refreshTokenDto.refreshToken,
+      find.hashedRefreshToken,
+    );
+    if (!refreshTokenValid)
+      throw new HttpException('Invalid refresh token', HttpStatus.UNAUTHORIZED);
+    const { accessToken, refreshToken } = await this.ormService.executeTransaction(
+      async manager => await this.generateTokens(user, manager),
+    );
+    return { accessToken, refreshToken };
+  }
+
+  async logout(user: GetUserRole) {
+    await this.usersService.logout(user.id);
+    return { message: 'Logout successful' };
+  }
 }

@@ -1,6 +1,6 @@
 import { HttpException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindManyOptions, FindOneOptions, FindOptionsSelect, Repository } from 'typeorm';
+import { EntityManager, FindOneOptions, FindOptionsSelect, Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import { CreateUserDto, FindAllDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -22,16 +22,16 @@ export class UsersService {
 
   async createUser(createUserDto: CreateUserDto, user: GetUserRole): Promise<User> {
     this.commonService.checkAdmin(user);
-    return await this.storeNewUser(createUserDto);
+    // when admin creates new user tokens won't be generated.
+    return await this.ormService.executeTransaction(
+      async manager => await this.storeNewUser(createUserDto, manager),
+    );
   }
 
-  async storeNewUser(createUserDto: CreateUserDto): Promise<User> {
+  async storeNewUser(createUserDto: CreateUserDto, manager: EntityManager): Promise<User> {
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
-    const user = this.usersRepository.create({
-      ...createUserDto,
-      password: hashedPassword,
-    });
-    return await this.usersRepository.save(user);
+    const user = manager.create(User, { ...createUserDto, password: hashedPassword });
+    return await manager.save(user);
   }
 
   async findAll(query: FindAllDto, user: GetUserRole): Promise<FindAllResponse<User>> {
@@ -73,5 +73,9 @@ export class UsersService {
   async checkExist(email: string) {
     const count = await this.usersRepository.count({ where: { email } });
     return count;
+  }
+
+  async logout(userId: string) {
+    await this.usersRepository.update(userId, { hashedRefreshToken: null });
   }
 }

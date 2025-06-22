@@ -30,3 +30,10 @@ export interface GenerateTokenPayload {
   name: string;
   role: UserRole;
 }
+
+export class RefreshTokenDto {
+  @ApiProperty({ example: 'ezadfadsfasddfadsfasdfasdfasdfasdfasdfassdfassddfassdfassdfasdf' })
+  @IsString()
+  @IsNotEmpty()
+  refreshToken: string;
+}

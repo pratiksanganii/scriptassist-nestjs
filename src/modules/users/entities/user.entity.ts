@@ -51,4 +51,7 @@ export class User {
 
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
+
+  @Column({ name: 'hashed_refresh_token', type: 'text', nullable: true })
+  hashedRefreshToken: string | null;
 }

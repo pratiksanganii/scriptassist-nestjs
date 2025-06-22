@@ -46,6 +46,7 @@ export class InitialSchema1615123456789 implements MigrationInterface {
         "status" user_status_domain NOT NULL DEFAULT ${UserStatus.ACTIVE},
         "created_at" TIMESTAMP NOT NULL DEFAULT now(),
         "updated_at" TIMESTAMP NOT NULL DEFAULT now(),
+        "hashed_refresh_token" TEXT,
         CONSTRAINT "UQ_users_email" UNIQUE ("email"),
         CONSTRAINT "PK_users" PRIMARY KEY ("id")
       )
