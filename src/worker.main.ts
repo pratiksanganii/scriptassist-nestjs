@@ -1,8 +1,8 @@
 import { NestFactory } from '@nestjs/core';
-import { TaskProcessorModule } from './queues/task-processor/task-processor.module';
+import { WorkerModule } from './queues/common/worker.module';
 
 async function bootstrap() {
-  await NestFactory.createApplicationContext(TaskProcessorModule);
+  await NestFactory.createApplicationContext(WorkerModule);
   console.log('Worker is running and listening to task queue...');
 }
 bootstrap();

@@ -58,7 +58,6 @@ export class TasksController {
   @Patch(':id')
   @ApiOperation({ summary: 'Update a task' })
   update(@Param('id') id: string, @Body() updateTaskDto: UpdateTaskDto) {
-    // No validation if task exists before update
     return this.tasksService.update(id, updateTaskDto);
   }
 

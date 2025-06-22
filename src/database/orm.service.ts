@@ -92,14 +92,19 @@ export class ORMService {
     const conn = dataSource.createQueryRunner();
     try {
       await conn.connect();
+      // start transaction
       await conn.startTransaction();
       const result = await handler(conn.manager);
+      // commit transaction on successful operation
       await conn.commitTransaction();
       return result;
     } catch (error) {
+      // rollback transaction on error
       await conn.rollbackTransaction();
+      // throw error
       throw error;
     } finally {
+      // release database connection
       await conn.release();
     }
   }
