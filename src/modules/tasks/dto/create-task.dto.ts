@@ -2,6 +2,7 @@ import { IsDate, IsEnum, IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-
 import { ApiProperty } from '@nestjs/swagger';
 import { TaskStatus } from '../enums/task-status.enum';
 import { TaskPriority } from '../enums/task-priority.enum';
+import { UUID } from 'crypto';
 
 export class CreateTaskDto {
   @ApiProperty({ example: 'Complete project documentation' })
@@ -32,5 +33,5 @@ export class CreateTaskDto {
   @ApiProperty({ example: '123e4567-e89b-12d3-a456-426614174000' })
   @IsUUID()
   @IsOptional()
-  userId: string;
+  userId: UUID | string;
 }
