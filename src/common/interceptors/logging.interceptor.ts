@@ -8,7 +8,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { Observable, throwError } from 'rxjs';
-import { catchError, tap } from 'rxjs/operators';
+import { catchError, tap, timeout } from 'rxjs/operators';
 
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
@@ -32,6 +32,7 @@ export class LoggingInterceptor implements NestInterceptor {
     this.logger.log(`Request: ${method} ${url}`);
 
     return next.handle().pipe(
+      timeout(60000), // set timeout on 60 seconds
       catchError(err => {
         // You can rethrow the same error
         if (err instanceof HttpException) return throwError(() => err);
