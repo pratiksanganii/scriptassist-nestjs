@@ -26,18 +26,10 @@ export class User {
   @Exclude({ toPlainOnly: true })
   password: string;
 
-  @Column({
-    type: 'enum',
-    enum: UserRole,
-    default: UserRole.USER,
-  })
+  @Column({ type: 'smallint', default: UserRole.USER, nullable: false })
   role: UserRole;
 
-  @Column({
-    type: 'enum',
-    enum: UserStatus,
-    default: UserStatus.ACTIVE,
-  })
+  @Column({ type: 'smallint', default: UserStatus.ACTIVE })
   status: UserStatus;
 
   @OneToMany(() => Task, task => task.user)

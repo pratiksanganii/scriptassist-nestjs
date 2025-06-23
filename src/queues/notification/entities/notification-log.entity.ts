@@ -1,4 +1,3 @@
-import { forwardRef } from '@nestjs/common';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -6,8 +5,9 @@ import {
   CreateDateColumn,
   JoinColumn,
   ManyToOne,
-  ObjectType,
 } from 'typeorm';
+import { User } from '../../../modules/users/entities/user.entity';
+import { Task } from '../../../modules/tasks/entities/task.entity';
 
 @Entity('notifications')
 export class Notification {
@@ -20,16 +20,9 @@ export class Notification {
   @Column({ name: 'user_id' })
   userId: string;
 
-  @ManyToOne(
-    () =>
-      forwardRef(
-        () => require('../../../modules/users/entities/user.entity').User,
-      ) as unknown as ObjectType<any>,
-    user => user.notifications,
-    { onDelete: 'CASCADE' },
-  )
+  @ManyToOne(() => User, user => user.notifications, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'user_id' })
-  user: import('../../../modules/users/entities/user.entity').User;
+  user: User;
 
   @Column()
   type: string;
@@ -40,14 +33,7 @@ export class Notification {
   @CreateDateColumn()
   createdAt: Date;
 
-  @ManyToOne(
-    () =>
-      forwardRef(
-        () => require('../../../modules/tasks/entities/task.entity').Task,
-      ) as unknown as ObjectType<any>,
-    task => task.notifications,
-    { nullable: true, onDelete: 'SET NULL' },
-  )
+  @ManyToOne(() => Task, task => task.notifications, { nullable: true, onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'task_id' })
-  task: any;
+  task: Task;
 }

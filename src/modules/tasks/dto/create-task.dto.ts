@@ -34,4 +34,6 @@ export class CreateTaskDto {
   @IsUUID()
   @IsOptional()
   userId: UUID | string;
+
+  lastActionBy?: UUID | string;
 }

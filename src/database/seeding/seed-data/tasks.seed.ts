@@ -10,6 +10,7 @@ export const tasks = [
     priority: TaskPriority.HIGH,
     dueDate: new Date(new Date().setDate(new Date().getDate() + 7)), // Due in 7 days
     userId: '550e8400-e29b-41d4-a716-446655440000', // Admin user
+    lastActionBy: '550e8400-e29b-41d4-a716-446655440000',
   },
   {
     id: '660e8400-e29b-41d4-a716-446655440001',
@@ -19,6 +20,7 @@ export const tasks = [
     priority: TaskPriority.HIGH,
     dueDate: new Date(new Date().setDate(new Date().getDate() - 3)), // Due 3 days ago
     userId: '550e8400-e29b-41d4-a716-446655440000', // Admin user
+    lastActionBy: '550e8400-e29b-41d4-a716-446655440000', // Admin user
   },
   {
     id: '660e8400-e29b-41d4-a716-446655440002',
@@ -28,6 +30,7 @@ export const tasks = [
     priority: TaskPriority.MEDIUM,
     dueDate: new Date(new Date().setDate(new Date().getDate() + 14)), // Due in 14 days
     userId: '550e8400-e29b-41d4-a716-446655440001', // Normal user
+    lastActionBy: '550e8400-e29b-41d4-a716-446655440001', // Normal user
   },
   {
     id: '660e8400-e29b-41d4-a716-446655440003',
@@ -37,6 +40,7 @@ export const tasks = [
     priority: TaskPriority.LOW,
     dueDate: new Date(new Date().setDate(new Date().getDate() + 1)), // Due tomorrow
     userId: '550e8400-e29b-41d4-a716-446655440001', // Normal user
+    lastActionBy: '550e8400-e29b-41d4-a716-446655440001', // Normal user
   },
   {
     id: '660e8400-e29b-41d4-a716-446655440004',
@@ -46,5 +50,6 @@ export const tasks = [
     priority: TaskPriority.MEDIUM,
     dueDate: new Date(new Date().setHours(new Date().getHours() + 5)), // Due in 5 hours
     userId: '550e8400-e29b-41d4-a716-446655440000', // Admin user
+    lastActionBy: '550e8400-e29b-41d4-a716-446655440000', // Admin user
   },
-]; 
+];

@@ -49,7 +49,7 @@ export class TasksController {
   @Get(':id')
   @ApiOperation({ summary: 'Find a task by ID' })
   async findOne(@Param('id') id: string, @GetRole() user: GetUserRole) {
-    const task = await this.tasksService.findOne(id);
+    const task = await this.tasksService.findOne(id, undefined, user);
     // if task not found
     if (!task) throw new HttpException(`Task not found in the database`, HttpStatus.NOT_FOUND);
     return task;
@@ -57,21 +57,23 @@ export class TasksController {
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update a task' })
-  update(@Param('id') id: string, @Body() updateTaskDto: UpdateTaskDto) {
-    return this.tasksService.update(id, updateTaskDto);
+  update(
+    @Param('id') id: string,
+    @Body() updateTaskDto: UpdateTaskDto,
+    @GetRole() user: GetUserRole,
+  ) {
+    return this.tasksService.update(id, updateTaskDto, user);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Delete a task' })
-  remove(@Param('id') id: string) {
-    // No validation if task exists before removal
-    // No status code returned for success
-    return this.tasksService.remove(id);
+  remove(@Param('id') id: string, @GetRole() user: GetUserRole) {
+    return this.tasksService.remove(id, user);
   }
 
   @Post('batch')
   @ApiOperation({ summary: 'Batch process multiple tasks' })
-  async batchProcess(@Body() operations: BatchTaskDto) {
-    return await this.tasksService.batchProcess(operations);
+  async batchProcess(@Body() operations: BatchTaskDto, @GetRole() user: GetUserRole) {
+    return await this.tasksService.batchProcess(operations, user.role);
   }
 }

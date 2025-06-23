@@ -14,6 +14,7 @@ import { EntityManager } from 'typeorm';
 import { User } from '../users/entities/user.entity';
 import { GetUserRole } from 'src/common/decorators/get-role.decorator';
 import { ConfigService } from '@nestjs/config';
+import { createHash } from 'crypto';
 
 @Injectable()
 export class AuthService {
@@ -63,7 +64,7 @@ export class AuthService {
     };
     const refreshToken = this.jwtService.sign(user, payload);
     // store hashed refresh token and access token for single session per user
-    const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
+    const hashedRefreshToken = await bcrypt.hash(this.sha256(refreshToken), 10);
     await manager.update(User, { id: user.id }, { hashedRefreshToken });
     return { accessToken, refreshToken };
   }
@@ -92,7 +93,7 @@ export class AuthService {
     if (!find || !find.hashedRefreshToken)
       throw new HttpException('User not found', HttpStatus.NOT_FOUND);
     const refreshTokenValid = await bcrypt.compare(
-      refreshTokenDto.refreshToken,
+      this.sha256(refreshTokenDto.refreshToken),
       find.hashedRefreshToken,
     );
     if (!refreshTokenValid)
@@ -106,5 +107,9 @@ export class AuthService {
   async logout(user: GetUserRole) {
     await this.usersService.logout(user.id);
     return { message: 'Logout successful' };
+  }
+
+  sha256(value: string): string {
+    return createHash('sha256').update(value).digest('hex');
   }
 }

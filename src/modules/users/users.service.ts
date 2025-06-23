@@ -22,6 +22,8 @@ export class UsersService {
 
   async createUser(createUserDto: CreateUserDto, user: GetUserRole): Promise<User> {
     this.commonService.checkAdmin(user);
+    const count = await this.checkExist(createUserDto.email);
+    if (count) throw new HttpException('User already exist', HttpStatus.CONFLICT);
     // when admin creates new user tokens won't be generated.
     return await this.ormService.executeTransaction(
       async manager => await this.storeNewUser(createUserDto, manager),

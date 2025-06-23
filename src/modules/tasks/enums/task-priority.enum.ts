@@ -8,3 +8,9 @@ export enum TaskDelete {
   DELETED = 1,
   NOT_DELETED = 2,
 }
+
+export enum TaskLogType {
+  CREATE = 1, // needed in case if task was created by admin
+  UPDATE = 2,
+  DELETE = 3,
+}

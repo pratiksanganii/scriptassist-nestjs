@@ -24,25 +24,17 @@ export class Task {
   @Column({ type: 'text', nullable: true })
   description: string;
 
-  @Column({
-    type: 'enum',
-    enum: TaskStatus,
-    default: TaskStatus.PENDING,
-  })
+  @Column({ type: 'smallint', nullable: false, default: TaskStatus.PENDING })
   status: TaskStatus;
 
-  @Column({
-    type: 'enum',
-    enum: TaskPriority,
-    default: TaskPriority.MEDIUM,
-  })
+  @Column({ type: 'smallint', nullable: false, default: TaskPriority.MEDIUM })
   priority: TaskPriority;
 
   @Column({
-    type: 'enum',
-    enum: TaskDelete,
-    default: TaskDelete.NOT_DELETED,
+    type: 'smallint',
     name: 'task_delete',
+    default: TaskDelete.NOT_DELETED,
+    nullable: false,
   })
   taskDelete: TaskDelete;
 
@@ -64,4 +56,12 @@ export class Task {
 
   @OneToMany(() => Notification, notification => notification.user)
   notifications: Notification[];
+
+  // last updated or removed by which admin or user himself, in case if user is registered by himself
+  @Column({ name: 'last_action_by', nullable: false })
+  lastActionBy: string;
+
+  @ManyToOne(() => User, { onDelete: 'RESTRICT', nullable: true })
+  @JoinColumn({ name: 'last_action_by' })
+  lastActionUser: User;
 }

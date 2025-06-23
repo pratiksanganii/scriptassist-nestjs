@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { createHash } from 'crypto';
 import { GetUserRole } from '../decorators/get-role.decorator';
 import { UserRole } from '../../modules/users/user_role.enum';
@@ -14,7 +14,8 @@ export class CommonService {
   }
 
   checkAdmin(user: GetUserRole) {
-    if (user.role != UserRole.ADMIN) throw new Error('Only admin can access this resource');
+    if (user.role != UserRole.ADMIN)
+      throw new HttpException('Only admin can access this resource', HttpStatus.FORBIDDEN);
   }
 
   getEnumValues<T extends object>(e: T): T[keyof T][] {

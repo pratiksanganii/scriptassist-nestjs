@@ -25,6 +25,7 @@ import { UUID } from 'crypto';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  @UseGuards(JwtAuthGuard)
   @Post()
   async create(@GetRole() user: GetUserRole, @Body() createUserDto: CreateUserDto) {
     return await this.usersService.createUser(createUserDto, user);

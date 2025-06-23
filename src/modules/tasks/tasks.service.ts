@@ -58,6 +58,8 @@ export class TasksService {
     // normal user can only create tasks for themselves
     if (user.role == UserRole.USER && createTaskDto.userId && createTaskDto.userId != user.id)
       throw new Error('Only admin can create tasks for other users');
+    // store lastActionBy for tracking history who created task
+    createTaskDto.lastActionBy = user.id;
     // use userId of the api caller if not provided explicitly
     if (!createTaskDto.userId) createTaskDto.userId = user.id;
     return await this.commonCreateTask(createTaskDto);
@@ -75,7 +77,8 @@ export class TasksService {
 
   async findAll(query: TaskFilterDto, user: GetUserRole): Promise<FindAllResponse<Task>> {
     const qb = this.tasksRepository.createQueryBuilder(this.tasksRepository.metadata.tableName);
-
+    // do not include deleted task
+    qb.andWhere('task_delete= :taskDelete', { taskDelete: TaskDelete.NOT_DELETED });
     // if user is normal user then only show tasks of that user
     if (user.role == UserRole.USER) qb.andWhere('user_id = :userId', { userId: user.id });
 
@@ -110,9 +113,9 @@ export class TasksService {
     return this.ormService.prepareFindAllResponse(response[0], response[1], { take, skip });
   }
 
-  async findOne(id: string, manager?: EntityManager): Promise<Task> {
+  async findOne(id: string, manager?: EntityManager, user?: GetUserRole): Promise<Task> {
     // always use with transaction using manager
-    const where = { id, taskDelete: TaskDelete.NOT_DELETED };
+    const where = this.getCommonWhere(id, user);
     const found = manager
       ? await manager.findOneBy(Task, where)
       : await this.tasksRepository.findOneBy(where);
@@ -120,9 +123,23 @@ export class TasksService {
     return found;
   }
 
+  //#region get common where for findone and count task
+  private getCommonWhere(id: string, user?: GetUserRole) {
+    return {
+      id,
+      taskDelete: TaskDelete.NOT_DELETED,
+      ...(user && user.role == UserRole.USER ? { userId: user.id } : {}), // only admin can see tasks of other users
+    };
+  }
+  //#endregion
+
   //#region count task by id
-  private async countTask(id: string, manager?: EntityManager): Promise<number> {
-    const where = { id, taskDelete: TaskDelete.NOT_DELETED };
+  private async countTask(
+    id: string,
+    manager?: EntityManager,
+    user?: GetUserRole,
+  ): Promise<number> {
+    const where = this.getCommonWhere(id, user);
     const found = manager
       ? await manager.countBy(Task, where)
       : await this.tasksRepository.countBy(where);
@@ -130,12 +147,14 @@ export class TasksService {
   }
   //#endregion
 
-  async update(id: string, updateTaskDto: UpdateTaskDto): Promise<Task> {
+  async update(id: string, updateTaskDto: UpdateTaskDto, user?: GetUserRole): Promise<Task> {
     // perform operation in transaction
     const response = await this.ormService.executeTransaction(async manager => {
       const task = await this.findOne(id, manager);
       const oldStatus = task.status;
       this.validateAddCommonData(task, updateTaskDto);
+      // store lastActionBy for tracking history
+      task.lastActionBy = (updateTaskDto.lastActionBy ?? user?.id) as string;
       // save updates in database with transaction
       const updatedTask = await manager.save(task);
 
@@ -148,21 +167,16 @@ export class TasksService {
     return response;
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string, user?: GetUserRole): Promise<void> {
     await this.ormService.executeTransaction(async manager => {
       // check if task exist and not deleted already
-      const count = await this.countTask(id, manager);
+      const count = await this.countTask(id, manager, user);
       if (!count) throw new HttpException(`Task not found`, HttpStatus.NOT_FOUND);
       // update task status
       await manager.update(Task, { id }, { taskDelete: TaskDelete.DELETED });
       await this.notificationService.notifyTaskDelete({ id });
       return true;
     });
-  }
-
-  async updateStatus(id: string, status: TaskStatus): Promise<Task> {
-    // use the update job function by passing status only
-    return await this.update(id, { status });
   }
 
   async getStats(user: GetUserRole) {
@@ -219,7 +233,9 @@ export class TasksService {
    *     - `async: true` → task will be queued.
    *     - `async: false` → task will be executed immediately (synchronously).
    */
-  async batchProcess(operations: BatchTaskDto) {
+  async batchProcess(operations: BatchTaskDto, role: UserRole) {
+    // as of now only allowing admins for this API
+    this.commonService.checkAdmin({ role } as GetUserRole);
     const checkIsNull = ![false, true].includes(operations.async);
     const batchData: { syncTask: CreateBatchTask[]; asyncTask: CreateBatchTask[] } = {
       syncTask: [],
@@ -250,9 +266,9 @@ export class TasksService {
     // process requiredsynchronous tasks
     await this.processSyncTasks(syncTask);
     // add required asynchronous tasks to queue
-    await this.addAsyncTaskToQueue(asyncTask);
+    const jobs = await this.addAsyncTaskToQueue(asyncTask);
 
-    return { data: 'success' };
+    return { data: 'success', syncTask, asyncTask, jobs };
   }
 
   private async processSyncTasks(tasks: CreateBatchTask[]) {
@@ -314,7 +330,7 @@ export class TasksService {
           opts: { jobId: `${task.operation} ${task?.data?.id}`, ...JOB_CONFIG },
         };
       });
-    await this.taskQueue.addBulk(bulk);
+    return await this.taskQueue.addBulk(bulk);
   }
   //#endregion
 
