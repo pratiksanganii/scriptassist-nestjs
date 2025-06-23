@@ -1,6 +1,7 @@
 networks:
   taskflow_network:
     driver: overlay
+    attachable: true
 services:
   redis:
     image: redis:7-alpine
