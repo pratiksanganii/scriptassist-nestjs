@@ -1,56 +1,83 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { EntityManager, FindOneOptions, FindOptionsSelect, Repository } from 'typeorm';
 import { User } from './entities/user.entity';
-import { CreateUserDto } from './dto/create-user.dto';
+import { CreateUserDto, FindAllDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
+import { GetUserRole } from '../../common/decorators/get-role.decorator';
+import { FindAllResponse, ORMService } from '../../database/orm.service';
+import { UUID } from 'crypto';
+import { UserRole, UserStatus } from '../../modules/users/user_role.enum';
+import { CommonService } from '../../common/services/common.service';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
-    private usersRepository: Repository<User>,
+    private readonly usersRepository: Repository<User>,
+    private readonly ormService: ORMService,
+    private readonly commonService: CommonService,
   ) {}
 
-  async create(createUserDto: CreateUserDto): Promise<User> {
-    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
-    const user = this.usersRepository.create({
-      ...createUserDto,
-      password: hashedPassword,
-    });
-    return this.usersRepository.save(user);
+  async createUser(createUserDto: CreateUserDto, user: GetUserRole): Promise<User> {
+    this.commonService.checkAdmin(user);
+    const count = await this.checkExist(createUserDto.email);
+    if (count) throw new HttpException('User already exist', HttpStatus.CONFLICT);
+    // when admin creates new user tokens won't be generated.
+    return await this.ormService.executeTransaction(
+      async manager => await this.storeNewUser(createUserDto, manager),
+    );
   }
 
-  findAll(): Promise<User[]> {
-    return this.usersRepository.find();
+  async storeNewUser(createUserDto: CreateUserDto, manager: EntityManager): Promise<User> {
+    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+    const user = manager.create(User, { ...createUserDto, password: hashedPassword });
+    return await manager.save(user);
+  }
+
+  async findAll(query: FindAllDto, user: GetUserRole): Promise<FindAllResponse<User>> {
+    this.commonService.checkAdmin(user);
+    // #pending pagination and search
+    return await this.ormService.findAll(this.usersRepository, {}, query);
   }
 
   async findOne(id: string): Promise<User> {
     const user = await this.usersRepository.findOne({ where: { id } });
-    if (!user) {
-      throw new NotFoundException(`User with ID ${id} not found`);
-    }
+    if (!user) throw new NotFoundException(`User with ID ${id} not found`);
     return user;
   }
 
-  async findByEmail(email: string): Promise<User | null> {
-    return this.usersRepository.findOne({ where: { email } });
+  async findByEmail(email: string, attributes?: FindOptionsSelect<User>): Promise<User | null> {
+    const opt: FindOneOptions<User> = { where: { email } };
+    // if attributes is provided get only selected attributes
+    if (attributes) opt.select = attributes;
+    return await this.usersRepository.findOne(opt);
   }
 
-  async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
-    const user = await this.findOne(id);
-    
-    if (updateUserDto.password) {
+  async updateUser(id: UUID, updateUserDto: UpdateUserDto, role: UserRole): Promise<User> {
+    if (role != UserRole.ADMIN) throw new Error('Only admin can update user');
+    return await this.update(id, updateUserDto);
+  }
+
+  async update(id: UUID, updateUserDto: UpdateUserDto): Promise<User> {
+    if (updateUserDto.password)
       updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
-    }
-    
-    this.usersRepository.merge(user, updateUserDto);
-    return this.usersRepository.save(user);
+    return await this.ormService.update(this.usersRepository, id, updateUserDto as User);
   }
 
-  async remove(id: string): Promise<void> {
-    const user = await this.findOne(id);
-    await this.usersRepository.remove(user);
+  async remove(id: UUID, role: UserRole): Promise<void> {
+    if (role != UserRole.ADMIN)
+      throw new HttpException('Only admin can remove user', HttpStatus.UNAUTHORIZED);
+    await this.ormService.update(this.usersRepository, id, { status: UserStatus.DELETED });
   }
-} 
+
+  async checkExist(email: string) {
+    const count = await this.usersRepository.count({ where: { email } });
+    return count;
+  }
+
+  async logout(userId: string) {
+    await this.usersRepository.update(userId, { hashedRefreshToken: null });
+  }
+}

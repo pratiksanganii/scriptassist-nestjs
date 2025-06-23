@@ -1,6 +1,15 @@
-import { Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  OneToMany,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 import { Task } from '../../tasks/entities/task.entity';
 import { Exclude } from 'class-transformer';
+import { UserRole, UserStatus } from '../user_role.enum';
+import { Notification } from '../../../queues/notification/entities/notification-log.entity';
 
 @Entity('users')
 export class User {
@@ -17,15 +26,24 @@ export class User {
   @Exclude({ toPlainOnly: true })
   password: string;
 
-  @Column({ default: 'user' })
-  role: string;
+  @Column({ type: 'smallint', default: UserRole.USER, nullable: false })
+  role: UserRole;
 
-  @OneToMany(() => Task, (task) => task.user)
+  @Column({ type: 'smallint', default: UserStatus.ACTIVE })
+  status: UserStatus;
+
+  @OneToMany(() => Task, task => task.user)
   tasks: Task[];
+
+  @OneToMany(() => Notification, notification => notification.user)
+  notifications: Notification[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
-} 
+
+  @Column({ name: 'hashed_refresh_token', type: 'text', nullable: true })
+  hashedRefreshToken: string | null;
+}

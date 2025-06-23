@@ -1,7 +1,17 @@
-import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { TaskStatus } from '../enums/task-status.enum';
-import { TaskPriority } from '../enums/task-priority.enum';
+import { TaskDelete, TaskPriority } from '../enums/task-priority.enum';
+import { Notification } from '../../../queues/notification/entities/notification-log.entity';
 
 @Entity('tasks')
 export class Task {
@@ -14,19 +24,19 @@ export class Task {
   @Column({ type: 'text', nullable: true })
   description: string;
 
-  @Column({
-    type: 'enum',
-    enum: TaskStatus,
-    default: TaskStatus.PENDING,
-  })
+  @Column({ type: 'smallint', nullable: false, default: TaskStatus.PENDING })
   status: TaskStatus;
 
-  @Column({
-    type: 'enum',
-    enum: TaskPriority,
-    default: TaskPriority.MEDIUM,
-  })
+  @Column({ type: 'smallint', nullable: false, default: TaskPriority.MEDIUM })
   priority: TaskPriority;
+
+  @Column({
+    type: 'smallint',
+    name: 'task_delete',
+    default: TaskDelete.NOT_DELETED,
+    nullable: false,
+  })
+  taskDelete: TaskDelete;
 
   @Column({ name: 'due_date', nullable: true })
   dueDate: Date;
@@ -34,7 +44,7 @@ export class Task {
   @Column({ name: 'user_id' })
   userId: string;
 
-  @ManyToOne(() => User, (user) => user.tasks)
+  @ManyToOne(() => User, user => user.tasks)
   @JoinColumn({ name: 'user_id' })
   user: User;
 
@@ -43,4 +53,15 @@ export class Task {
 
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
-} 
+
+  @OneToMany(() => Notification, notification => notification.user)
+  notifications: Notification[];
+
+  // last updated or removed by which admin or user himself, in case if user is registered by himself
+  @Column({ name: 'last_action_by', nullable: false })
+  lastActionBy: string;
+
+  @ManyToOne(() => User, { onDelete: 'RESTRICT', nullable: true })
+  @JoinColumn({ name: 'last_action_by' })
+  lastActionUser: User;
+}

@@ -4,6 +4,7 @@ import { User } from '../../modules/users/entities/user.entity';
 import { Task } from '../../modules/tasks/entities/task.entity';
 import { users } from './seed-data/users.seed';
 import { tasks } from './seed-data/tasks.seed';
+import { Notification } from '../../queues/notification/entities/notification-log.entity';
 
 // Load environment variables
 config();
@@ -16,7 +17,7 @@ const AppDataSource = new DataSource({
   username: process.env.DB_USERNAME || 'postgres',
   password: process.env.DB_PASSWORD || 'postgres',
   database: process.env.DB_DATABASE || 'taskflow',
-  entities: [User, Task],
+  entities: [User, Task, Notification],
   synchronize: false,
 });
 
@@ -51,4 +52,4 @@ async function main() {
 }
 
 // Run the seeding
-main(); 
+main();
